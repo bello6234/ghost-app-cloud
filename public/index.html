@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Attendance Sender</title>
+<style>
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --absent: #ff4d4d; --sick: #ffaa00; --leave: #00bfff; --present: #238636; }
+  * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
+  body { background: var(--bg); color: var(--text); margin: 0; padding: 14px; padding-bottom: 40px; }
+  
+  .header { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 14px; position: relative; }
+  .header h2 { margin: 0 0 6px 0; font-size: 17px; color: #58a6ff; letter-spacing: 0.5px; text-transform: uppercase; }
+  .sub-info { font-size: 13px; color: #8b949e; display: flex; justify-content: space-around; margin-top: 6px; }
+  .wa-status { font-weight: bold; }
+  .wa-online { color: #3fb950; }
+  .wa-offline { color: #f85149; }
+
+  .settings-btn { position: absolute; top: 12px; right: 12px; background: transparent; border: none; font-size: 18px; cursor: pointer; color: #8b949e; }
+  .shift-toggle { margin-top: 8px; background: #21262d; color: #c9d1d9; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+
+  .toolbar-label { font-size: 12px; color: #8b949e; text-align: center; margin-bottom: 8px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; position: sticky; top: 8px; z-index: 10; background: rgba(13, 17, 23, 0.9); padding: 6px 0; backdrop-filter: blur(6px); }
+  .mode-btn { flex: 1; padding: 14px 8px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); color: var(--text); font-weight: 800; font-size: 14px; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+  .mode-btn.glow-absent { border-color: var(--absent); background: rgba(255, 77, 77, 0.18); color: #fff; box-shadow: 0 0 18px var(--absent), inset 0 0 8px var(--absent); transform: translateY(-2px); }
+  .mode-btn.glow-sick { border-color: var(--sick); background: rgba(255, 170, 0, 0.18); color: #fff; box-shadow: 0 0 18px var(--sick), inset 0 0 8px var(--sick); transform: translateY(-2px); }
+  .mode-btn.glow-leave { border-color: var(--leave); background: rgba(0, 191, 255, 0.18); color: #fff; box-shadow: 0 0 18px var(--leave), inset 0 0 8px var(--leave); transform: translateY(-2px); }
+
+  .worker-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+  .worker-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; }
+  .worker-name { font-size: 15px; font-weight: 500; }
+  .marker-btn { min-width: 105px; padding: 9px 12px; border-radius: 8px; border: 2px solid #30363d; background: #21262d; color: #c9d1d9; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .marker-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--present); }
+
+  .worker-row.status-absent { border-color: var(--absent); background: rgba(255, 77, 77, 0.07); }
+  .worker-row.status-absent .marker-btn { border-color: var(--absent); color: var(--absent); }
+  .worker-row.status-absent .marker-dot { background: var(--absent); box-shadow: 0 0 8px var(--absent); }
+  .worker-row.status-sick { border-color: var(--sick); background: rgba(255, 170, 0, 0.07); }
+  .worker-row.status-sick .marker-btn { border-color: var(--sick); color: var(--sick); }
+  .worker-row.status-sick .marker-dot { background: var(--sick); box-shadow: 0 0 8px var(--sick); }
+  .worker-row.status-leave { border-color: var(--leave); background: rgba(0, 191, 255, 0.07); }
+  .worker-row.status-leave .marker-btn { border-color: var(--leave); color: var(--leave); }
+  .worker-row.status-leave .marker-dot { background: var(--leave); box-shadow: 0 0 8px var(--leave); }
+
+  .preview-box { background: #090d11; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: monospace; white-space: pre-wrap; font-size: 13px; color: #a5d6ff; margin-bottom: 16px; line-height: 1.4; }
+  .send-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: #238636; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(35, 134, 54, 0.4); }
+  .send-btn:disabled { background: #30363d; color: #8b949e; box-shadow: none; }
+  .toast { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
+  
+  .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; overflow-y: auto; padding: 20px; }
+  .modal-header { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
+  .back-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-right: 15px; }
+  .modal h2 { color: #58a6ff; margin: 0; }
+  .modal-section { background: var(--card); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px; }
+  .modal input { width: 100%; padding: 12px; margin: 8px 0 12px 0; background: #010409; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; }
+  .modal-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+  .close-modal { width: 100%; background: #238636; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; }
+  .list-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: #090d11; border-radius: 6px; border: 1px solid var(--border); align-items: center;}
+  .del-btn { color: #f85149; cursor: pointer; font-weight: bold; padding: 5px 10px; background: rgba(248, 81, 73, 0.1); border-radius: 4px;}
+
+  /* Overlay Modal for Shift Selection */
+  #shiftModal { background: rgba(13,17,23,0.95); display: flex; align-items: center; justify-content: center; }
+  .shift-box { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; width: 100%; max-width: 320px; }
+  .shift-box h3 { margin-top: 0; color: #e6edf3; }
+  .shift-select-btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; font-size: 15px; margin-bottom: 10px; cursor: pointer; }
+  .btn-morning { background: #d29922; color: #fff; }
+  .btn-afternoon { background: #58a6ff; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  <h2 id="shiftTitle">SELECT SHIFT</h2>
+  <div class="sub-info">
+    <span id="dateDisplay">--/--/--</span>
+    <span id="receiversCount">To: 2 numbers</span>
+    <span id="waStatus" class="wa-status wa-offline">● WA Offline</span>
+  </div>
+  <button class="shift-toggle" onclick="toggleManualShift()">Switch Morning / Afternoon</button>
+</div>
+
+<div class="toolbar-label">1. Tap a button below to make it GLOW<br>2. Tap the marker beside any name to mark them</div>
+
+<div class="toolbar">
+  <button id="btn-absent" class="mode-btn" onclick="selectMode('absent')">ABSENT</button>
+  <button id="btn-sick" class="mode-btn" onclick="selectMode('sick')">SICK</button>
+  <button id="btn-leave" class="mode-btn" onclick="selectMode('leave')">LEAVE</button>
+</div>
+
+<div id="workerList" class="worker-list"></div>
+
+<div class="toolbar-label">LIVE WHATSAPP MESSAGE PREVIEW:</div>
+<div id="previewBox" class="preview-box"></div>
+
+<button id="sendBtn" class="send-btn" onclick="handleSendClick()">SEND TO WHATSAPP NOW</button>
+<div id="toast" class="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal">
+    <div class="modal-header">
+        <button class="back-btn" onclick="closeSettings()">◀ BACK</button>
+        <h2>⚙️ App Settings</h2>
+    </div>
+
+    <div class="modal-section">
+        <h3 style="margin-top: 0; color: var(--text);">🏷️ Team Subtitle</h3>
+        <input type="text" id="teamNameInput" placeholder="e.g. STRIPPERS">
+    </div>
+    
+    <div class="modal-section">
+        <h3 style="margin-top: 0; color: var(--text);">👥 Workers List</h3>
+        <div id="settingsWorkers"></div>
+        <input type="text" id="newWorker" placeholder="Type new worker name">
+        <button class="modal-btn" onclick="addWorker()">+ Add Worker</button>
+    </div>
+
+    <div class="modal-section">
+        <h3 style="margin-top: 0; color: var(--text);">📱 WhatsApp Receivers</h3>
+        <div id="settingsNumbers"></div>
+        <input type="number" id="newNumber" placeholder="e.g. 2348000000000">
+        <button class="modal-btn" onclick="addNumber()">+ Add Number</button>
+    </div>
+
+    <div class="modal-section">
+        <h3 style="margin-top: 0; color: var(--text);">🔗 Connect WhatsApp</h3>
+        <input type="number" id="pairPhone" placeholder="Phone Number (e.g. 234...)">
+        <button class="modal-btn" onclick="pairWhatsApp()" style="background:#238636; border:none;">Get Pairing Code</button>
+        <div id="pairDisplay" style="margin-top:15px; font-size:2em; font-weight:bold; color:#58a6ff; text-align:center; letter-spacing:5px;"></div>
+    </div>
+
+    <button class="close-modal" onclick="closeSettings()">SAVE CHANGES</button>
+</div>
+
+<!-- SHIFT POPUP MODAL -->
+<div id="shiftModal" class="modal" style="display:none;">
+    <div class="shift-box">
+        <h3>Which Shift Is This?</h3>
+        <p style="font-size:13px; color:#8b949e; margin-bottom: 20px;">Select the current shift to proceed with sending.</p>
+        <button class="shift-select-btn btn-morning" onclick="setShiftAndSend('MORNING')">🌅 MORNING SHIFT</button>
+        <button class="shift-select-btn btn-afternoon" onclick="setShiftAndSend('AFTERNOON')">🌇 AFTERNOON SHIFT</button>
+        <button onclick="document.getElementById('shiftModal').style.display='none'" style="margin-top:10px; background:transparent; border:none; color:#f85149; font-weight:bold; padding:10px;">CANCEL</button>
+    </div>
+</div>
+
+<script>
+let config = { workers: [], numbers: [], teamName: "STRIPPERS", currentShift: "" };
+let activeMode = null;
+let statuses = {};
+let formattedDate = new Date().toLocaleDateString('en-GB');
+document.getElementById('dateDisplay').innerText = formattedDate;
+
+async function loadData() {
+    try {
+        const res = await fetch('/api/config');
+        config = await res.json();
+        if(!config.teamName) config.teamName = "STRIPPERS";
+        if(!config.currentShift) config.currentShift = "";
+        
+        config.workers.forEach(w => { if (!statuses[w]) statuses[w] = 'present'; });
+        Object.keys(statuses).forEach(w => { if (!config.workers.includes(w)) delete statuses[w]; });
+
+        document.getElementById('receiversCount').innerText = `To: ${config.numbers.length} numbers`;
+        document.getElementById('teamNameInput').value = config.teamName;
+        
+        if (config.currentShift) {
+            document.getElementById('shiftTitle').innerText = config.currentShift + " SHIFT ATTENDANCE";
+        }
+        renderList();
+    } catch(e) { console.error("Failed to load config"); }
+}
+
+async function saveConfig() {
+    try {
+        await fetch('/api/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(config)
+        });
+    } catch(e) {}
+}
+
+function selectMode(mode) {
+  activeMode = (activeMode === mode) ? null : mode;
+  updateModeButtons();
+}
+
+function updateModeButtons() {
+  ['absent', 'sick', 'leave'].forEach(m => {
+    document.getElementById('btn-' + m).className = 'mode-btn' + (activeMode === m ? ' glow-' + m : '');
+  });
+}
+
+function markWorker(name) {
+  fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
+  if (!activeMode) {
+    if (statuses[name] !== 'present') statuses[name] = 'present';
+    else alert("Tap ABSENT, SICK, or LEAVE first so the button glows, then tap the marker!");
+  } else {
+    statuses[name] = (statuses[name] === activeMode) ? 'present' : activeMode;
+  }
+  renderList();
+}
+
+async function toggleManualShift() {
+  config.currentShift = (config.currentShift === "AFTERNOON") ? "MORNING" : "AFTERNOON";
+  document.getElementById('shiftTitle').innerText = config.currentShift + " SHIFT ATTENDANCE";
+  await saveConfig();
+  updatePreview();
+}
+
+function buildMessageText() {
+  const present = config.workers.filter(w => statuses[w] === 'present');
+  const absent = config.workers.filter(w => statuses[w] === 'absent');
+  const sick = config.workers.filter(w => statuses[w] === 'sick');
+  const leave = config.workers.filter(w => statuses[w] === 'leave');
+
+  const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
+  
+  let msg = `${shiftDisplay} SHIFT ATTENDANCE \n   ${config.teamName} \n  ${formattedDate}\n\n`;
+  present.forEach((name, idx) => { msg += `${idx + 1}. ${name}\n`; });
+
+  if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
+  if (sick.length > 0) msg += `\nSick \n` + sick.join('\n') + `\n`;
+  if (leave.length > 0) msg += `\nOn Leave \n` + leave.join('\n') + `\n`;
+  
+  return msg.trim();
+}
+
+function renderList() {
+  const container = document.getElementById('workerList');
+  container.innerHTML = '';
+  config.workers.forEach(name => {
+    const st = statuses[name];
+    const row = document.createElement('div');
+    row.className = `worker-row status-${st}`;
+    const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE' };
+    row.innerHTML = `<span class="worker-name">${name}</span><button class="marker-btn" onclick="markWorker('${name}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
+    container.appendChild(row);
+  });
+  updatePreview();
+}
+
+function updatePreview() { document.getElementById('previewBox').innerText = buildMessageText(); }
+
+function openSettings() { renderSettingsUI(); document.getElementById('settingsModal').style.display = 'block'; }
+
+async function closeSettings() {
+    config.teamName = document.getElementById('teamNameInput').value.trim() || "STRIPPERS";
+    await saveConfig();
+    document.getElementById('settingsModal').style.display = 'none';
+    await loadData();
+}
+
+function renderSettingsUI() {
+    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500;">${w}</span> <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
+    document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
+}
+
+function addWorker() { const val = document.getElementById('newWorker').value.trim(); if(val && !config.workers.includes(val)) { config.workers.push(val); document.getElementById('newWorker').value = ''; renderSettingsUI(); } }
+function addNumber() { const val = document.getElementById('newNumber').value.trim(); if(val && !config.numbers.includes(val)) { config.numbers.push(val); document.getElementById('newNumber').value = ''; renderSettingsUI(); } }
+
+async function pairWhatsApp() {
+    const phone = document.getElementById('pairPhone').value;
+    if(!phone) return alert("Enter a phone number");
+    document.getElementById('pairDisplay').innerText = "WAIT...";
+    try {
+        const res = await fetch('/api/pair', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone }) });
+        const data = await res.json();
+        document.getElementById('pairDisplay').innerText = data.code ? data.code : "ERROR";
+    } catch(e) { document.getElementById('pairDisplay').innerText = "FAILED"; }
+}
+
+async function handleSendClick() {
+    fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
+    
+    // If shift is not set yet, pop up the modal!
+    if (!config.currentShift) {
+        document.getElementById('shiftModal').style.display = 'flex';
+        return;
+    }
+    await sendAttendance();
+}
+
+async function setShiftAndSend(shift) {
+    config.currentShift = shift;
+    document.getElementById('shiftTitle').innerText = shift + " SHIFT ATTENDANCE";
+    document.getElementById('shiftModal').style.display = 'none';
+    await saveConfig();
+    updatePreview();
+    await sendAttendance();
+}
+
+async function sendAttendance() {
+  const btn = document.getElementById('sendBtn');
+  const toast = document.getElementById('toast');
+  const text = buildMessageText();
+
+  btn.disabled = true;
+  btn.innerText = "SENDING TO WHATSAPP...";
+  toast.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+    const data = await res.json();
+    toast.style.display = 'block';
+    if (data.success) {
+      toast.style.background = '#238636'; toast.style.color = '#fff';
+      toast.innerText = '✅ Attendance Sent Successfully!';
+      btn.innerText = "SENT ✅";
+    } else throw new Error(data.error || 'Failed to send');
+  } catch (err) {
+    toast.style.display = 'block'; toast.style.background = '#da3633'; toast.style.color = '#fff';
+    toast.innerText = '❌ Error: ' + err.message;
+    btn.disabled = false; btn.innerText = "RETRY SEND TO WHATSAPP";
+  }
+}
+
+// Init
+loadData().then(() => {
+    setInterval(async () => {
+        try {
+            const res = await fetch('/api/config');
+            if(res.ok) {
+                const waEl = document.getElementById('waStatus');
+                waEl.innerText = "● WA Ready"; waEl.className = "wa-status wa-online";
+            }
+        } catch (e) {
+            const waEl = document.getElementById('waStatus');
+            waEl.innerText = "● WA Connecting..."; waEl.className = "wa-status wa-offline";
+        }
+    }, 4000);
+});
+</script>
+</body>
+</html>

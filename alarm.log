@@ -1,0 +1,180 @@
+[18:34:31] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:34:36] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:34:41] launching http://127.0.0.1:4545
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+[18:34:45] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:34:50] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:34:55] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:35:00] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:35:05] launching http://127.0.0.1:4545
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+[18:35:10] launching http://127.0.0.1:4545
+
+Exception occurred while executing 'start':
+java.lang.SecurityException: Permission Denial: package=com.android.shell does not belong to uid=10312
+	at com.android.server.wm.ActivityTaskManagerService.assertPackageMatchesCallingUid(ActivityTaskManagerService.java:2784)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1514)
+	at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1495)
+	at com.android.server.am.ActivityManagerService.startActivityAsUserWithFeature(ActivityManagerService.java:3754)
+	at com.android.server.am.ActivityManagerShellCommand.runStartActivity(ActivityManagerShellCommand.java:981)
+	at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:279)
+	at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
+	at android.os.ShellCommand.exec(ShellCommand.java:38)
+	at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11696)
+	at android.os.Binder.shellCommand(Binder.java:1158)
+	at android.os.Binder.onTransact(Binder.java:960)
+	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:6274)
+	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3192)
+	at android.os.Binder.execTransactInternal(Binder.java:1433)
+	at android.os.Binder.execTransact(Binder.java:1372)
+Starting: Intent { act=android.intent.action.VIEW dat=http://127.0.0.1:4545/... flg=0x10000000 }
