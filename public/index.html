@@ -105,7 +105,7 @@
 
     <div class="modal-section">
         <h3 style="margin-top: 0; color: var(--text);">🏷️ Team Subtitle</h3>
-        <input type="text" id="teamNameInput" placeholder="e.g. STRIPPERS">
+        <input type="text" id="teamNameInput" placeholder="e.g. MY TEAM">
     </div>
     
     <div class="modal-section">
@@ -144,7 +144,7 @@
 </div>
 
 <script>
-let config = { workers: [], numbers: [], teamName: "STRIPPERS", currentShift: "" };
+let config = { workers: [], numbers: [], teamName: "MY TEAM", currentShift: "" };
 let activeMode = null;
 let statuses = {};
 let formattedDate = new Date().toLocaleDateString('en-GB');
@@ -154,7 +154,7 @@ async function loadData() {
     try {
         const res = await fetch('/api/config');
         config = await res.json();
-        if(!config.teamName) config.teamName = "STRIPPERS";
+        if(!config.teamName) config.teamName = "MY TEAM";
         if(!config.currentShift) config.currentShift = "";
         
         config.workers.forEach(w => { if (!statuses[w]) statuses[w] = 'present'; });
@@ -246,7 +246,7 @@ function updatePreview() { document.getElementById('previewBox').innerText = bui
 function openSettings() { renderSettingsUI(); document.getElementById('settingsModal').style.display = 'block'; }
 
 async function closeSettings() {
-    config.teamName = document.getElementById('teamNameInput').value.trim() || "STRIPPERS";
+    config.teamName = document.getElementById('teamNameInput').value.trim() || "MY TEAM";
     await saveConfig();
     document.getElementById('settingsModal').style.display = 'none';
     await loadData();
@@ -320,10 +320,10 @@ async function sendAttendance() {
 loadData().then(() => {
     setInterval(async () => {
         try {
-            const res = await fetch('/api/config');
-            if(res.ok) {
+            const res = await fetch('/api/status');
+            if(res.ok) { const st = await res.json();
                 const waEl = document.getElementById('waStatus');
-                waEl.innerText = "● WA Ready"; waEl.className = "wa-status wa-online";
+                if (st.connected) { waEl.innerText = "● WA Ready"; waEl.className = "wa-status wa-online"; } else { waEl.innerText = "● WA Not Linked"; waEl.className = "wa-status wa-offline"; }
             }
         } catch (e) {
             const waEl = document.getElementById('waStatus');
@@ -331,6 +331,14 @@ loadData().then(() => {
         }
     }, 4000);
 });
+
+(function(){
+  var b = document.createElement('div');
+  b.style.cssText = 'display:none;margin:10px;padding:12px;border-radius:10px;background:#1c2a1f;color:#7ee787;text-align:center;font-size:14px;';
+  b.textContent = '👋 Welcome! Tap the ⚙️ gear to add your workers, add receiver numbers, and link WhatsApp.';
+  document.body.insertBefore(b, document.body.firstChild);
+  setInterval(function(){ b.style.display = (config.workers.length === 0) ? 'block' : 'none'; }, 1000);
+})();
 </script>
 </body>
 </html>
