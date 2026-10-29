@@ -1,79 +1,169 @@
 const express = require('express');
-const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const crypto = require('crypto');
+
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const app = express();
-app.use(express.json());
-app.use(express.static('public'));
+app.use(express.json({ limit: '100kb' }));
 
-const configPath = path.join(__dirname, 'config.json');
-let config = { workers: [], numbers: [], teamName: "STRIPPERS", currentShift: "" };
+const ID_RE = /^[a-f0-9-]{36}$/;
+const DEFAULTS = { workers: [], numbers: [], teamName: 'MY TEAM', currentShift: '' };
 
-if (fs.existsSync(configPath)) {
-    const saved = JSON.parse(fs.readFileSync(configPath));
-    config = { ...config, ...saved };
-} else {
-    config.workers = [
-        "Abdulrusheed Toheeb", "Bardi Emmanuel", "Yusuf Suleiman", 
-        "fawaz ghost 👻 F X", "Olalekan Okesanjo", "Damilola Bello", 
-        "David Favour", "Ajiwoju Michael", "Eniola Shadare"
-    ];
-    config.numbers = ["2348119656999", "2348037938860"];
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+const devDir = (id) => path.join(DATA_DIR, id);
+const authDir = (id) => path.join(devDir(id), 'auth');
+const cfgPath = (id) => path.join(devDir(id), 'config.json');
+
+function loadConfig(id) {
+    try { return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(cfgPath(id), 'utf8')) }; }
+    catch { return { ...DEFAULTS }; }
+}
+function saveConfig(id, cfg) {
+    fs.mkdirSync(devDir(id), { recursive: true });
+    const tmp = cfgPath(id) + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2));
+    fs.renameSync(tmp, cfgPath(id));
 }
 
-let sock;
-let isConnected = false;
-
-async function connectWA() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info');
-    sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: false,
-        logger: pino({ level: 'silent' }),
-        browser: ["Mac OS", "Safari", "10.15.7"]
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-    sock.ev.on('connection.update', (update) => {
-        const { connection } = update;
-        if (connection === 'open') { isConnected = true; console.log("✅ WhatsApp Connected!"); }
-        if (connection === 'close') { isConnected = false; setTimeout(connectWA, 5000); }
-    });
+// 2340909... -> 234909... ; 0909... -> 234909...
+function cleanNumber(raw) {
+    let n = String(raw || '').replace(/[^0-9]/g, '');
+    if (n.startsWith('2340')) n = '234' + n.slice(4);
+    else if (n.length === 11 && n.startsWith('0')) n = '234' + n.slice(1);
+    return n;
 }
-connectWA();
 
-app.get('/api/config', (req, res) => res.json(config));
+function getCookie(req, name) {
+    const hit = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith(name + '='));
+    return hit ? decodeURIComponent(hit.slice(name.length + 1)) : null;
+}
+
+// Identify the device: ?device=ID from the app, else cookie, else new ID
+app.use((req, res, next) => {
+    let id = req.query.device;
+    if (!(typeof id === 'string' && ID_RE.test(id))) id = getCookie(req, 'device');
+    if (!id || !ID_RE.test(id)) id = crypto.randomUUID();
+    res.cookie('device', id, { maxAge: 31536000000, sameSite: 'lax', httpOnly: true });
+    req.deviceId = id;
+    next();
+});
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ---------- WhatsApp sessions (one per device) ----------
+const sessions = new Map();
+
+async function startWA(id) {
+    let s = sessions.get(id);
+    if (!s) { s = { sock: null, connected: false, starting: false }; sessions.set(id, s); }
+    if (s.starting || s.connected) return s;
+    s.starting = true;
+    try {
+        const { state, saveCreds } = await useMultiFileAuthState(authDir(id));
+        const sock = makeWASocket({
+            auth: state,
+            printQRInTerminal: false,
+            logger: pino({ level: 'silent' }),
+            browser: Browsers.ubuntu('Chrome')
+        });
+        s.sock = sock;
+        sock.ev.on('creds.update', saveCreds);
+        sock.ev.on('connection.update', (u) => {
+            if (s.sock !== sock) return;
+            if (u.connection === 'open') { s.connected = true; console.log('WA connected', id); }
+            if (u.connection === 'close') {
+                s.connected = false; s.starting = false;
+                const code = u.lastDisconnect?.error?.output?.statusCode;
+                if (code === DisconnectReason.loggedOut) {
+                    fs.rmSync(authDir(id), { recursive: true, force: true });
+                    s.sock = null;
+                } else if (state.creds.registered) {
+                    setTimeout(() => startWA(id).catch(() => {}), 5000);
+                } else {
+                    s.sock = null; // unpaired: wait for user to request a code
+                }
+            }
+        });
+    } catch (e) { s.starting = false; throw e; }
+    return s;
+}
+
+// ---------- API ----------
+app.get('/api/config', (req, res) => res.json(loadConfig(req.deviceId)));
+
 app.post('/api/config', (req, res) => {
-    config = { ...config, ...req.body };
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    const b = req.body || {};
+    const cfg = loadConfig(req.deviceId);
+    if (Array.isArray(b.workers)) {
+        cfg.workers = b.workers.map(w => String(w).trim().slice(0, 60)).filter(Boolean).slice(0, 200);
+    }
+    if (Array.isArray(b.numbers)) {
+        cfg.numbers = [...new Set(b.numbers.map(cleanNumber).filter(n => n.length >= 10))].slice(0, 50);
+    }
+    if (typeof b.teamName === 'string') cfg.teamName = b.teamName.trim().slice(0, 40);
+    if (typeof b.currentShift === 'string') cfg.currentShift = b.currentShift.slice(0, 20);
+    saveConfig(req.deviceId, cfg);
     res.json({ success: true });
+});
+
+app.get('/api/status', (req, res) => {
+    const s = sessions.get(req.deviceId);
+    res.json({ connected: !!(s && s.connected) });
 });
 
 app.post('/api/pair', async (req, res) => {
     try {
-        let phone = req.body.phone.replace(/[^0-9]/g, '');
-        if (!sock) return res.status(500).json({ error: "Socket not ready" });
-        let code = await sock.requestPairingCode(phone);
-        res.json({ code: code });
+        const id = req.deviceId;
+        const phone = cleanNumber(req.body && req.body.phone);
+        if (phone.length < 10) return res.status(400).json({ error: 'Enter your number with country code, no + and no 0 after it' });
+        let s = sessions.get(id);
+        if (s && s.connected) return res.status(400).json({ error: 'Already connected' });
+        if (s && s.sock) { const old = s.sock; s.sock = null; s.starting = false; try { old.end(undefined); } catch {} }
+        fs.rmSync(authDir(id), { recursive: true, force: true });
+        s = await startWA(id);
+        await new Promise(r => setTimeout(r, 3000));
+        const code = await s.sock.requestPairingCode(phone);
+        res.json({ code });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.post('/api/unlink', async (req, res) => {
+    const s = sessions.get(req.deviceId);
+    try { if (s && s.sock) await s.sock.logout(); } catch {}
+    fs.rmSync(authDir(req.deviceId), { recursive: true, force: true });
+    sessions.delete(req.deviceId);
+    res.json({ success: true });
+});
+
 app.post('/api/send', async (req, res) => {
-    if (!isConnected) return res.status(500).json({ error: "WhatsApp not connected" });
-    const { text } = req.body;
+    const id = req.deviceId;
+    const s = sessions.get(id);
+    if (!s || !s.connected) return res.status(500).json({ error: 'WhatsApp not connected' });
+    const cfg = loadConfig(id);
+    if (!cfg.numbers.length) return res.status(400).json({ error: 'No receiver numbers added' });
+    const text = String((req.body && req.body.text) || '').slice(0, 4000);
+    if (!text) return res.status(400).json({ error: 'Empty message' });
     try {
-        for (let num of config.numbers) {
-            await sock.sendMessage(num + "@s.whatsapp.net", { text });
-        }
+        for (const num of cfg.numbers) await s.sock.sendMessage(num + '@s.whatsapp.net', { text });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/test-alarm', (req, res) => { exec('~/attendance-bot/alarm_worker.sh &'); res.json({ triggered: true }); });
-app.post('/api/stop-alarm', (req, res) => { exec('curl -s -X POST http://127.0.0.1:4545/api/stop-alarm; termux-notification-remove 999'); res.json({ stopped: true }); });
+// old local-alarm routes: no-ops on the cloud server
+app.post('/api/test-alarm', (req, res) => res.json({ triggered: false }));
+app.post('/api/stop-alarm', (req, res) => res.json({ stopped: true }));
 
-app.listen(4545, () => console.log('🔒 Backend Running on port 4545'));
+// resume every paired device after a restart
+(async () => {
+    for (const id of fs.readdirSync(DATA_DIR)) {
+        if (ID_RE.test(id) && fs.existsSync(path.join(authDir(id), 'creds.json'))) {
+            try { await startWA(id); } catch (e) { console.log('resume failed', id, e.message); }
+            await new Promise(r => setTimeout(r, 1000));
+        }
+    }
+})();
+
+app.listen(process.env.PORT || 4545, () => console.log('Backend running'));

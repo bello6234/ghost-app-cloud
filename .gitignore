@@ -1,2 +1,4 @@
 node_modules/
 auth_info/
+data/
+config.json
