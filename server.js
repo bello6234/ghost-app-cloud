@@ -10,8 +10,21 @@ if (!TURSO_URL || !TURSO_TOKEN) { console.error('Missing TURSO_URL / TURSO_TOKEN
 
 // ---------- Turso over HTTP (no dependencies) ----------
 async function sql(stmt, args = []) {
+    let lastErr;
+    for (let i = 0; i < 3; i++) {
+        try { return await sqlOnce(stmt, args); }
+        catch (e) {
+            lastErr = e;
+            console.log('DB retry', i + 1, e.message, e.cause && (e.cause.code || e.cause.message));
+            await new Promise(r => setTimeout(r, 400 * (i + 1)));
+        }
+    }
+    throw lastErr;
+}
+
+async function sqlOnce(stmt, args = []) {
     const r = await fetch(TURSO_URL + '/v2/pipeline', {
-        method: 'POST',
+        method: 'POST', signal: AbortSignal.timeout(15000),
         headers: { Authorization: 'Bearer ' + TURSO_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [
             { type: 'execute', stmt: { sql: stmt, args: args.map(a => ({ type: 'text', value: String(a) })) } },
