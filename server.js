@@ -180,7 +180,7 @@ app.use((req, res, next) => {
     req.deviceId = id;
     next();
 });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') }));
 
 // ---------- WhatsApp sessions (one per device) ----------
 const sessions = new Map();
