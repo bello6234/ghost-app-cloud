@@ -339,6 +339,43 @@ loadData().then(() => {
   document.body.insertBefore(b, document.body.firstChild);
   setInterval(function(){ b.style.display = (config.workers.length === 0) ? 'block' : 'none'; }, 1000);
 })();
+
+(function(){
+  var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;text-align:left;';
+  function mount(){
+    var inp = document.querySelector('input[placeholder^="e.g. 2348"]');
+    if(!inp || document.getElementById('grpBox')) return;
+    var box = document.createElement('div'); box.id = 'grpBox';
+    var btn = document.createElement('button');
+    var label = '\ud83d\udc65 Pick a WhatsApp group';
+    btn.textContent = label; btn.style.cssText = BTN + 'text-align:center;';
+    var list = document.createElement('div');
+    btn.onclick = async function(){
+      btn.textContent = 'Loading groups...';
+      try {
+        var r = await fetch('/api/groups');
+        var g = await r.json();
+        if(!r.ok) throw new Error(g.error || 'Failed');
+        list.innerHTML = '';
+        if(!g.length) list.textContent = 'No groups found on this WhatsApp.';
+        g.forEach(function(x){
+          var b = document.createElement('button');
+          b.textContent = x.name; b.style.cssText = BTN;
+          b.onclick = function(){
+            if(config.numbers.indexOf(x.id) === -1) config.numbers.push(x.id);
+            renderSettingsUI();
+            b.textContent = '\u2705 ' + x.name;
+          };
+          list.appendChild(b);
+        });
+      } catch(e){ alert('Could not load groups: ' + e.message); }
+      btn.textContent = label;
+    };
+    box.appendChild(btn); box.appendChild(list);
+    inp.parentElement.appendChild(box);
+  }
+  setInterval(mount, 800);
+})();
 </script>
 </body>
 </html>

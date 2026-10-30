@@ -160,6 +160,13 @@ function cleanNumber(raw) {
     return n;
 }
 
+// phone number OR group id (123456789-123@g.us)
+function cleanRecipient(raw) {
+    const t = String(raw || '').trim();
+    if (/^[0-9-]+@g\.us$/.test(t)) return t;
+    return cleanNumber(t);
+}
+
 function getCookie(req, name) {
     const hit = (req.headers.cookie || '').split(';').map(s => s.trim()).find(s => s.startsWith(name + '='));
     return hit ? decodeURIComponent(hit.slice(name.length + 1)) : null;
@@ -225,7 +232,7 @@ app.post('/api/config', async (req, res) => {
         const b = req.body || {};
         const cfg = await loadConfig(req.deviceId);
         if (Array.isArray(b.workers)) cfg.workers = b.workers.map(w => String(w).trim().slice(0, 60)).filter(Boolean).slice(0, 200);
-        if (Array.isArray(b.numbers)) cfg.numbers = [...new Set(b.numbers.map(cleanNumber).filter(n => n.length >= 10))].slice(0, 50);
+        if (Array.isArray(b.numbers)) cfg.numbers = [...new Set(b.numbers.map(cleanRecipient).filter(n => n.length >= 10))].slice(0, 50);
         if (typeof b.teamName === 'string') cfg.teamName = b.teamName.trim().slice(0, 40);
         if (typeof b.currentShift === 'string') cfg.currentShift = b.currentShift.slice(0, 20);
         await kvSet(req.deviceId, 'config', JSON.stringify(cfg));
@@ -273,6 +280,17 @@ app.post('/api/unlink', async (req, res) => {
     res.json({ success: true });
 });
 
+app.get('/api/groups', async (req, res) => {
+    const st = sessions.get(req.deviceId);
+    if (!st || !st.connected) return res.status(500).json({ error: 'WhatsApp not connected' });
+    try {
+        const g = await st.sock.groupFetchAllParticipating();
+        const list = Object.values(g).map(x => ({ id: x.id, name: x.subject || x.id }));
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        res.json(list);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.post('/api/send', async (req, res) => {
     const id = req.deviceId;
     const s = sessions.get(id);
@@ -282,7 +300,7 @@ app.post('/api/send', async (req, res) => {
         if (!cfg.numbers.length) return res.status(400).json({ error: 'No receiver numbers added' });
         const text = String((req.body && req.body.text) || '').slice(0, 4000);
         if (!text) return res.status(400).json({ error: 'Empty message' });
-        for (const num of cfg.numbers) await s.sock.sendMessage(num + '@s.whatsapp.net', { text });
+        for (const num of cfg.numbers) await s.sock.sendMessage(num.endsWith('@g.us') ? num : num + '@s.whatsapp.net', { text });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
