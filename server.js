@@ -4,41 +4,78 @@ const pino = require('pino');
 const path = require('path');
 const crypto = require('crypto');
 
+process.on('unhandledRejection', (e) => console.log('unhandled:', e && e.message));
+process.on('uncaughtException', (e) => console.log('uncaught:', e && e.message));
+
 const TURSO_URL = (process.env.TURSO_URL || '').replace(/^libsql:\/\//, 'https://');
 const TURSO_TOKEN = process.env.TURSO_TOKEN || '';
 if (!TURSO_URL || !TURSO_TOKEN) { console.error('Missing TURSO_URL / TURSO_TOKEN env vars'); process.exit(1); }
 
-// ---------- Turso over HTTP (no dependencies) ----------
-async function sql(stmt, args = []) {
-    let lastErr;
-    for (let i = 0; i < 3; i++) {
-        try { return await sqlOnce(stmt, args); }
-        catch (e) {
-            lastErr = e;
-            console.log('DB retry', i + 1, e.message, e.cause && (e.cause.code || e.cause.message));
-            await new Promise(r => setTimeout(r, 400 * (i + 1)));
-        }
-    }
-    throw lastErr;
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ---------- Turso over HTTP: limited concurrency + batching ----------
+let active = 0;
+const waiters = [];
+async function limited(fn) {
+    while (active >= 4) await new Promise(r => waiters.push(r));
+    active++;
+    try { return await fn(); }
+    finally { active--; const w = waiters.shift(); if (w) w(); }
 }
 
-async function sqlOnce(stmt, args = []) {
+async function pipeline(items, timeoutMs) {
     const r = await fetch(TURSO_URL + '/v2/pipeline', {
-        method: 'POST', signal: AbortSignal.timeout(15000),
+        method: 'POST',
+        signal: AbortSignal.timeout(timeoutMs),
         headers: { Authorization: 'Bearer ' + TURSO_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests: [
-            { type: 'execute', stmt: { sql: stmt, args: args.map(a => ({ type: 'text', value: String(a) })) } },
+            ...items.map(it => ({ type: 'execute', stmt: { sql: it.sql, args: (it.args || []).map(a => ({ type: 'text', value: String(a) })) } })),
             { type: 'close' }
         ] })
     });
     const j = await r.json();
-    const first = j.results && j.results[0];
-    if (!r.ok || !first || first.type === 'error') throw new Error('DB error: ' + JSON.stringify(first || j).slice(0, 200));
-    return first.response.result.rows.map(row => row.map(c => c.value));
+    if (!r.ok || !j.results) throw new Error('DB error: ' + JSON.stringify(j).slice(0, 200));
+    for (const x of j.results) {
+        if (x.type === 'error') throw new Error('DB error: ' + JSON.stringify(x).slice(0, 200));
+    }
+    return j.results;
+}
+
+async function run(items, timeoutMs = 20000) {
+    let lastErr;
+    for (let i = 0; i < 3; i++) {
+        try { return await limited(() => pipeline(items, timeoutMs)); }
+        catch (e) { lastErr = e; console.log('DB retry', i + 1, e.message); await sleep(500 * (i + 1)); }
+    }
+    throw lastErr;
+}
+
+async function sql(stmt, args = []) {
+    const results = await run([{ sql: stmt, args }]);
+    return results[0].response.result.rows.map(row => row.map(c => c.value));
+}
+
+// write queue: many small writes become a few big requests
+const writeQ = [];
+let flushing = false;
+function enqueue(item) {
+    return new Promise((resolve, reject) => {
+        writeQ.push({ item, resolve, reject });
+        if (!flushing) { flushing = true; setTimeout(flush, 150); }
+    });
+}
+async function flush() {
+    while (writeQ.length) {
+        const chunk = writeQ.splice(0, 100);
+        try { await run(chunk.map(c => c.item)); chunk.forEach(c => c.resolve()); }
+        catch (e) { chunk.forEach(c => c.reject(e)); }
+    }
+    flushing = false;
 }
 
 const cache = new Map();
 const ck = (d, k) => d + '|' + k;
+
 async function kvGet(d, k) {
     const key = ck(d, k);
     if (cache.has(key)) return cache.get(key);
@@ -47,43 +84,54 @@ async function kvGet(d, k) {
     cache.set(key, v);
     return v;
 }
+async function kvGetMany(d, ks) {
+    const miss = ks.filter(k => !cache.has(ck(d, k)));
+    for (let i = 0; i < miss.length; i += 50) {
+        const part = miss.slice(i, i + 50);
+        const rows = await sql(`SELECT k, v FROM kv WHERE device=? AND k IN (${part.map(() => '?').join(',')})`, [d, ...part]);
+        const found = new Map(rows.map(r => [r[0], r[1]]));
+        for (const k of part) cache.set(ck(d, k), found.has(k) ? found.get(k) : null);
+    }
+    return ks.map(k => cache.get(ck(d, k)));
+}
 async function kvSet(d, k, v) {
     cache.set(ck(d, k), v);
-    await sql('INSERT INTO kv(device,k,v) VALUES(?,?,?) ON CONFLICT(device,k) DO UPDATE SET v=excluded.v', [d, k, v]);
+    await enqueue({ sql: 'INSERT INTO kv(device,k,v) VALUES(?,?,?) ON CONFLICT(device,k) DO UPDATE SET v=excluded.v', args: [d, k, v] });
 }
 async function kvDel(d, k) {
     cache.set(ck(d, k), null);
-    await sql('DELETE FROM kv WHERE device=? AND k=?', [d, k]);
+    await enqueue({ sql: 'DELETE FROM kv WHERE device=? AND k=?', args: [d, k] });
 }
 async function kvWipeAuth(d) {
     for (const key of [...cache.keys()]) if (key.startsWith(d + '|a:')) cache.delete(key);
-    await sql("DELETE FROM kv WHERE device=? AND k LIKE 'a:%'", [d]);
+    await enqueue({ sql: "DELETE FROM kv WHERE device=? AND k LIKE 'a:%'", args: [d] });
 }
 
 // WhatsApp auth state stored in the database instead of files
 async function useDBAuthState(id) {
-    const rd = async (k) => { const v = await kvGet(id, 'a:' + k); return v ? JSON.parse(v, BufferJSON.reviver) : null; };
+    const parse = (v) => (v ? JSON.parse(v, BufferJSON.reviver) : null);
     const wr = (k, data) => kvSet(id, 'a:' + k, JSON.stringify(data, BufferJSON.replacer));
     const rm = (k) => kvDel(id, 'a:' + k);
-    const creds = (await rd('creds')) || initAuthCreds();
+    const creds = parse(await kvGet(id, 'a:creds')) || initAuthCreds();
     return {
         state: {
             creds,
             keys: {
                 get: async (type, ids) => {
+                    const vals = await kvGetMany(id, ids.map(i => 'a:' + type + '-' + i));
                     const data = {};
-                    await Promise.all(ids.map(async (i) => {
-                        let v = await rd(`${type}-${i}`);
+                    ids.forEach((i, n) => {
+                        let v = parse(vals[n]);
                         if (type === 'app-state-sync-key' && v) v = proto.Message.AppStateSyncKeyData.fromObject(v);
                         data[i] = v;
-                    }));
+                    });
                     return data;
                 },
                 set: async (data) => {
                     const tasks = [];
                     for (const type in data) for (const i in data[type]) {
                         const v = data[type][i];
-                        tasks.push(v ? wr(`${type}-${i}`, v) : rm(`${type}-${i}`));
+                        tasks.push(v ? wr(type + '-' + i, v) : rm(type + '-' + i));
                     }
                     await Promise.all(tasks);
                 }
@@ -144,10 +192,10 @@ async function startWA(id) {
             browser: Browsers.ubuntu('Chrome')
         });
         s.sock = sock;
-        sock.ev.on('creds.update', () => saveCreds().catch(e => console.log('saveCreds', e.message)));
+        sock.ev.on('creds.update', () => saveCreds().catch(e => console.log('saveCreds failed:', e.message)));
         sock.ev.on('connection.update', (u) => {
             if (s.sock !== sock) return;
-            if (u.connection === 'open') { s.connected = true; console.log('WA connected', id); }
+            if (u.connection === 'open') { s.connected = true; console.log('WA connected', id.slice(0, 8)); }
             if (u.connection === 'close') {
                 s.connected = false; s.starting = false;
                 const code = u.lastDisconnect?.error?.output?.statusCode;
@@ -192,8 +240,12 @@ app.get('/api/status', (req, res) => {
 
 app.get('/api/health', async (req, res) => {
     try {
-        const rows = await sql("SELECT COUNT(DISTINCT device) FROM kv");
-        res.json({ ok: true, db: 'turso', devices: Number(rows[0][0]), linked: [...sessions.values()].filter(x => x.connected).length, uptimeSec: Math.round(process.uptime()) });
+        const rows = await sql('SELECT COUNT(DISTINCT device) FROM kv');
+        res.json({
+            ok: true, db: 'turso', devices: Number(rows[0][0]),
+            linked: [...sessions.values()].filter(x => x.connected).length,
+            pendingWrites: writeQ.length, uptimeSec: Math.round(process.uptime())
+        });
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
@@ -207,7 +259,7 @@ app.post('/api/pair', async (req, res) => {
         if (s && s.sock) { const old = s.sock; s.sock = null; s.starting = false; try { old.end(undefined); } catch {} }
         await kvWipeAuth(id);
         s = await startWA(id);
-        await new Promise(r => setTimeout(r, 3000));
+        await sleep(3000);
         const code = await s.sock.requestPairingCode(phone);
         res.json({ code });
     } catch (e) { res.status(500).json({ error: e.message }); }
@@ -245,7 +297,7 @@ app.post('/api/stop-alarm', (req, res) => res.json({ stopped: true }));
     const rows = await sql("SELECT device FROM kv WHERE k='a:creds'");
     for (const [id] of rows) {
         if (!ID_RE.test(id)) continue;
-        try { await startWA(id); } catch (e) { console.log('resume failed', id, e.message); }
-        await new Promise(r => setTimeout(r, 1000));
+        try { await startWA(id); } catch (e) { console.log('resume failed', id.slice(0, 8), e.message); }
+        await sleep(1000);
     }
 })().catch(e => { console.error('Boot failed', e); process.exit(1); });
