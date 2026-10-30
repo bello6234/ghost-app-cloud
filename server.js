@@ -138,10 +138,11 @@ async function startWA(id) {
             if (u.connection === 'close') {
                 s.connected = false; s.starting = false;
                 const code = u.lastDisconnect?.error?.output?.statusCode;
+                console.log('WA closed', id.slice(0, 8), code);
                 if (code === DisconnectReason.loggedOut) {
                     s.sock = null;
                     kvWipeAuth(id).catch(() => {});
-                } else if (state.creds.registered) {
+                } else if (state.creds.me || state.creds.registered) {
                     setTimeout(() => startWA(id).catch(() => {}), 5000);
                 } else {
                     s.sock = null;
@@ -179,7 +180,7 @@ app.get('/api/status', (req, res) => {
 app.get('/api/health', async (req, res) => {
     try {
         const rows = await sql("SELECT COUNT(DISTINCT device) FROM kv");
-        res.json({ ok: true, db: 'turso', devices: Number(rows[0][0]), uptimeSec: Math.round(process.uptime()) });
+        res.json({ ok: true, db: 'turso', devices: Number(rows[0][0]), linked: [...sessions.values()].filter(x => x.connected).length, uptimeSec: Math.round(process.uptime()) });
     } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
