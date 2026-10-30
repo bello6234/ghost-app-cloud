@@ -376,6 +376,58 @@ loadData().then(() => {
   }
   setInterval(mount, 800);
 })();
+
+(function(){
+  var FIELD = 'background:#000;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;box-sizing:border-box;font-size:14px;font-family:inherit;';
+  var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;';
+  function parse(text){
+    var out = [];
+    text.split(/\r?\n/).forEach(function(line){
+      var n = line.replace(/^\s*(?:\d+\s*[.)\-:]|[-*\u2022\u00b7])\s*/, '').replace(/\s+/g, ' ').trim();
+      if(n) out.push(n.slice(0, 60));
+    });
+    return out;
+  }
+  function mount(){
+    var inp = document.getElementById('newWorker');
+    if(!inp || document.getElementById('pasteBox')) return;
+    var box = document.createElement('div'); box.id = 'pasteBox';
+    var toggle = document.createElement('button');
+    toggle.textContent = '\ud83d\udccb Paste list of names'; toggle.style.cssText = BTN;
+    var panel = document.createElement('div'); panel.style.display = 'none';
+    var ta = document.createElement('textarea');
+    ta.rows = 8; ta.style.cssText = FIELD + 'margin-top:8px;';
+    ta.placeholder = '1. Example Example\n2. Example Example\n3. Example Example';
+    var addBtn = document.createElement('button');
+    addBtn.textContent = '+ Add these names'; addBtn.style.cssText = BTN;
+    var repBtn = document.createElement('button');
+    repBtn.textContent = 'Replace whole list'; repBtn.style.cssText = BTN;
+    var msg = document.createElement('div');
+    msg.style.cssText = 'margin-top:8px;font-size:13px;color:#7ee787;';
+    toggle.onclick = function(){ panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
+    function apply(replace){
+      var names = parse(ta.value);
+      if(!names.length){ msg.textContent = 'Nothing to add. Paste your names first.'; return; }
+      if(replace && !confirm('Replace your whole workers list with these ' + names.length + ' names?')) return;
+      if(replace) config.workers = [];
+      var have = {}; config.workers.forEach(function(w){ have[w.toLowerCase()] = 1; });
+      var added = 0, skipped = 0;
+      names.forEach(function(n){
+        if(have[n.toLowerCase()]){ skipped++; return; }
+        have[n.toLowerCase()] = 1; config.workers.push(n); added++;
+      });
+      renderSettingsUI();
+      ta.value = '';
+      msg.textContent = 'Added ' + added + (skipped ? ', skipped ' + skipped + ' duplicate(s)' : '') + '. Tap SAVE CHANGES to keep them.';
+    }
+    addBtn.onclick = function(){ apply(false); };
+    repBtn.onclick = function(){ apply(true); };
+    panel.appendChild(ta); panel.appendChild(addBtn); panel.appendChild(repBtn); panel.appendChild(msg);
+    box.appendChild(toggle); box.appendChild(panel);
+    inp.parentElement.appendChild(box);
+  }
+  setInterval(mount, 800);
+})();
 </script>
 </body>
 </html>
