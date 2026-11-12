@@ -25,6 +25,10 @@
   .mode-btn.glow-absent { border-color: var(--absent); background: rgba(255, 77, 77, 0.18); color: #fff; box-shadow: 0 0 18px var(--absent), inset 0 0 8px var(--absent); transform: translateY(-2px); }
   .mode-btn.glow-sick { border-color: var(--sick); background: rgba(255, 170, 0, 0.18); color: #fff; box-shadow: 0 0 18px var(--sick), inset 0 0 8px var(--sick); transform: translateY(-2px); }
   .mode-btn.glow-leave { border-color: var(--leave); background: rgba(0, 191, 255, 0.18); color: #fff; box-shadow: 0 0 18px var(--leave), inset 0 0 8px var(--leave); transform: translateY(-2px); }
+  .mode-btn.glow-off { border-color: #a8a8a8; background: rgba(168, 168, 168, 0.18); color: #fff; box-shadow: 0 0 18px #a8a8a8, inset 0 0 8px #a8a8a8; transform: translateY(-2px); }
+  .worker-row.status-off { border-color: #a8a8a8; background: rgba(168, 168, 168, 0.07); }
+  .worker-row.status-off .marker-btn { border-color: #a8a8a8; color: #a8a8a8; }
+  .worker-row.status-off .marker-dot { background: #a8a8a8; box-shadow: 0 0 8px #a8a8a8; }
 
   .worker-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
   .worker-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; }
@@ -83,6 +87,7 @@
 <div class="toolbar-label">1. Tap a button below to make it GLOW<br>2. Tap the marker beside any name to mark them</div>
 
 <div class="toolbar">
+  <button id="btn-off" class="mode-btn" onclick="selectMode('off')">OFF</button>
   <button id="btn-off" class="mode-btn" onclick="selectMode('off')">OFF</button>
   <button id="btn-absent" class="mode-btn" onclick="selectMode('absent')">ABSENT</button>
   <button id="btn-sick" class="mode-btn" onclick="selectMode('sick')">SICK</button>
@@ -187,7 +192,7 @@ function selectMode(mode) {
 }
 
 function updateModeButtons() {
-  ['absent', 'sick', 'leave'].forEach(m => {
+  ['off', 'absent', 'sick', 'leave'].forEach(m => {
     document.getElementById('btn-' + m).className = 'mode-btn' + (activeMode === m ? ' glow-' + m : '');
   });
 }
@@ -215,6 +220,7 @@ function buildMessageText() {
   const absent = config.workers.filter(w => statuses[w] === 'absent');
   const sick = config.workers.filter(w => statuses[w] === 'sick');
   const leave = config.workers.filter(w => statuses[w] === 'leave');
+const off = config.workers.filter(w => statuses[w] === 'off');
 
   const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
   
@@ -224,6 +230,7 @@ function buildMessageText() {
   if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
   if (sick.length > 0) msg += `\nSick \n` + sick.join('\n') + `\n`;
   if (leave.length > 0) msg += `\nOn Leave \n` + leave.join('\n') + `\n`;
+if (off.length > 0) msg += `\nOff \n` + off.join(`\n`) + `\n`;
   
   return msg.trim();
 }
@@ -235,7 +242,7 @@ function renderList() {
     const st = statuses[name];
     const row = document.createElement('div');
     row.className = `worker-row status-${st}`;
-    const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE' };
+    const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE', off: 'OFF' };
     row.innerHTML = `<span class="worker-name">${name}</span><button class="marker-btn" onclick="markWorker('${name}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
     container.appendChild(row);
   });
