@@ -3,32 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Attendance Sender</title>
+<title>Attendance & Work Update</title>
 <style>
-  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --absent: #ff4d4d; --sick: #ffaa00; --leave: #00bfff; --present: #238636; }
+  :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --absent: #ff4d4d; --sick: #ffaa00; --leave: #00bfff; --off: #a8a8a8; --present: #238636; --accent: #58a6ff; }
   * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; user-select: none; }
-  body { background: var(--bg); color: var(--text); margin: 0; padding: 14px; padding-bottom: 40px; }
-  
-  .header { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 14px; position: relative; }
-  .header h2 { margin: 0 0 6px 0; font-size: 17px; color: #58a6ff; letter-spacing: 0.5px; text-transform: uppercase; }
+  body { background: var(--bg); color: var(--text); margin: 0; padding: 14px; padding-bottom: 45px; }
+
+  .header { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 12px; position: relative; }
+  .header h2 { margin: 0 0 6px 0; font-size: 16px; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase; padding: 0 28px; }
   .sub-info { font-size: 13px; color: #8b949e; display: flex; justify-content: space-around; margin-top: 6px; }
   .wa-status { font-weight: bold; }
   .wa-online { color: #3fb950; }
   .wa-offline { color: #f85149; }
 
-  .settings-btn { position: absolute; top: 12px; right: 12px; background: transparent; border: none; font-size: 18px; cursor: pointer; color: #8b949e; }
+  .settings-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 19px; cursor: pointer; color: #8b949e; }
   .shift-toggle { margin-top: 8px; background: #21262d; color: #c9d1d9; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
 
+  /* Main Tabs */
+  .main-tabs { display: flex; gap: 8px; margin-bottom: 14px; background: var(--card); padding: 5px; border-radius: 12px; border: 1px solid var(--border); }
+  .tab-btn { flex: 1; padding: 11px 8px; border-radius: 8px; border: none; background: transparent; color: #8b949e; font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .tab-btn.active { background: #1f6feb; color: #fff; box-shadow: 0 0 12px rgba(31, 111, 235, 0.4); }
+
   .toolbar-label { font-size: 12px; color: #8b949e; text-align: center; margin-bottom: 8px; }
-  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; position: sticky; top: 8px; z-index: 10; background: rgba(13, 17, 23, 0.9); padding: 6px 0; backdrop-filter: blur(6px); }
-  .mode-btn { flex: 1; padding: 14px 8px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); color: var(--text); font-weight: 800; font-size: 14px; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; position: sticky; top: 8px; z-index: 10; background: rgba(13, 17, 23, 0.92); padding: 6px 0; backdrop-filter: blur(6px); }
+  .mode-btn { flex: 1; padding: 13px 4px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); color: var(--text); font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.2s ease; text-align: center; }
+  .mode-btn.glow-off { border-color: var(--off); background: rgba(168, 168, 168, 0.18); color: #fff; box-shadow: 0 0 18px var(--off), inset 0 0 8px var(--off); transform: translateY(-2px); }
   .mode-btn.glow-absent { border-color: var(--absent); background: rgba(255, 77, 77, 0.18); color: #fff; box-shadow: 0 0 18px var(--absent), inset 0 0 8px var(--absent); transform: translateY(-2px); }
   .mode-btn.glow-sick { border-color: var(--sick); background: rgba(255, 170, 0, 0.18); color: #fff; box-shadow: 0 0 18px var(--sick), inset 0 0 8px var(--sick); transform: translateY(-2px); }
   .mode-btn.glow-leave { border-color: var(--leave); background: rgba(0, 191, 255, 0.18); color: #fff; box-shadow: 0 0 18px var(--leave), inset 0 0 8px var(--leave); transform: translateY(-2px); }
-  .mode-btn.glow-off { border-color: #a8a8a8; background: rgba(168, 168, 168, 0.18); color: #fff; box-shadow: 0 0 18px #a8a8a8, inset 0 0 8px #a8a8a8; transform: translateY(-2px); }
-  .worker-row.status-off { border-color: #a8a8a8; background: rgba(168, 168, 168, 0.07); }
-  .worker-row.status-off .marker-btn { border-color: #a8a8a8; color: #a8a8a8; }
-  .worker-row.status-off .marker-dot { background: #a8a8a8; box-shadow: 0 0 8px #a8a8a8; }
 
   .worker-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
   .worker-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; }
@@ -36,6 +38,9 @@
   .marker-btn { min-width: 105px; padding: 9px 12px; border-radius: 8px; border: 2px solid #30363d; background: #21262d; color: #c9d1d9; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
   .marker-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--present); }
 
+  .worker-row.status-off { border-color: var(--off); background: rgba(168, 168, 168, 0.07); }
+  .worker-row.status-off .marker-btn { border-color: var(--off); color: var(--off); }
+  .worker-row.status-off .marker-dot { background: var(--off); box-shadow: 0 0 8px var(--off); }
   .worker-row.status-absent { border-color: var(--absent); background: rgba(255, 77, 77, 0.07); }
   .worker-row.status-absent .marker-btn { border-color: var(--absent); color: var(--absent); }
   .worker-row.status-absent .marker-dot { background: var(--absent); box-shadow: 0 0 8px var(--absent); }
@@ -46,23 +51,39 @@
   .worker-row.status-leave .marker-btn { border-color: var(--leave); color: var(--leave); }
   .worker-row.status-leave .marker-dot { background: var(--leave); box-shadow: 0 0 8px var(--leave); }
 
-  .preview-box { background: #090d11; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: monospace; white-space: pre-wrap; font-size: 13px; color: #a5d6ff; margin-bottom: 16px; line-height: 1.4; }
+  /* Work Update Cards */
+  .group-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+  .group-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .group-title { font-weight: 800; color: var(--accent); font-size: 15px; }
+  .group-del { background: rgba(248, 81, 73, 0.12); color: #f85149; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .worker-pick-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .wu-input, .wu-select { background: #010409; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; font-size: 14px; user-select: text; }
+  .wu-input { flex: 1; min-width: 0; }
+  .wu-select { width: 42px; text-align: center; font-weight: bold; color: var(--accent); }
+  .totals-row { display: flex; gap: 8px; margin-top: 6px; }
+  .total-field { flex: 1; display: flex; align-items: center; background: #090d11; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; }
+  .total-field span { font-size: 12px; font-weight: 800; color: #8b949e; margin-right: 6px; }
+  .total-field input { width: 100%; background: transparent; border: none; color: #7ee787; font-weight: 800; font-size: 15px; padding: 10px 0; outline: none; user-select: text; }
+  .add-group-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1px dashed var(--accent); background: rgba(88, 166, 255, 0.08); color: var(--accent); font-weight: 800; font-size: 14px; cursor: pointer; margin-bottom: 14px; }
+  .sort-chip { display: inline-flex; align-items: center; gap: 8px; background: #21262d; border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; margin: 4px 4px 0 0; font-size: 13px; }
+  .sort-chip b { color: #f85149; cursor: pointer; }
+
+  .preview-box { background: #090d11; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: monospace; white-space: pre-wrap; font-size: 13px; color: #a5d6ff; margin-bottom: 16px; line-height: 1.4; user-select: text; }
   .send-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: #238636; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(35, 134, 54, 0.4); }
   .send-btn:disabled { background: #30363d; color: #8b949e; box-shadow: none; }
   .toast { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
-  
+
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 1000; overflow-y: auto; padding: 20px; }
   .modal-header { display: flex; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
   .back-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-right: 15px; }
   .modal h2 { color: #58a6ff; margin: 0; }
   .modal-section { background: var(--card); padding: 15px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 15px; }
-  .modal input { width: 100%; padding: 12px; margin: 8px 0 12px 0; background: #010409; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; }
+  .modal input { width: 100%; padding: 12px; margin: 8px 0 12px 0; background: #010409; border: 1px solid var(--border); color: white; border-radius: 8px; box-sizing: border-box; user-select: text; }
   .modal-btn { background: #21262d; border: 1px solid var(--border); color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
   .close-modal { width: 100%; background: #238636; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; }
   .list-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: #090d11; border-radius: 6px; border: 1px solid var(--border); align-items: center;}
   .del-btn { color: #f85149; cursor: pointer; font-weight: bold; padding: 5px 10px; background: rgba(248, 81, 73, 0.1); border-radius: 4px;}
 
-  /* Overlay Modal for Shift Selection */
   #shiftModal { background: rgba(13,17,23,0.95); display: flex; align-items: center; justify-content: center; }
   .shift-box { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; width: 100%; max-width: 320px; }
   .shift-box h3 { margin-top: 0; color: #e6edf3; }
@@ -78,28 +99,62 @@
   <h2 id="shiftTitle">SELECT SHIFT</h2>
   <div class="sub-info">
     <span id="dateDisplay">--/--/--</span>
-    <span id="receiversCount">To: 2 numbers</span>
+    <span id="receiversCount">To: 0 numbers</span>
     <span id="waStatus" class="wa-status wa-offline">● WA Offline</span>
   </div>
   <button class="shift-toggle" onclick="toggleManualShift()">Switch Morning / Afternoon</button>
 </div>
 
-<div class="toolbar-label">1. Tap a button below to make it GLOW<br>2. Tap the marker beside any name to mark them</div>
-
-<div class="toolbar">
-  <button id="btn-off" class="mode-btn" onclick="selectMode('off')">OFF</button>
-  <button id="btn-absent" class="mode-btn" onclick="selectMode('absent')">ABSENT</button>
-  <button id="btn-sick" class="mode-btn" onclick="selectMode('sick')">SICK</button>
-  <button id="btn-leave" class="mode-btn" onclick="selectMode('leave')">LEAVE</button>
+<div class="main-tabs">
+  <button id="tab-att" class="tab-btn active" onclick="switchTab('att')">📋 ATTENDANCE</button>
+  <button id="tab-work" class="tab-btn" onclick="switchTab('work')">📦 WORK UPDATE</button>
 </div>
 
-<div id="workerList" class="worker-list"></div>
+<!-- ATTENDANCE SECTION -->
+<div id="attSection">
+  <div class="toolbar-label">1. Tap a button below to make it GLOW<br>2. Tap the marker beside any name to mark them</div>
 
-<div class="toolbar-label">LIVE WHATSAPP MESSAGE PREVIEW:</div>
-<div id="previewBox" class="preview-box"></div>
+  <div class="toolbar">
+    <button id="btn-off" class="mode-btn" onclick="selectMode('off')">OFF</button>
+    <button id="btn-absent" class="mode-btn" onclick="selectMode('absent')">ABSENT</button>
+    <button id="btn-sick" class="mode-btn" onclick="selectMode('sick')">SICK</button>
+    <button id="btn-leave" class="mode-btn" onclick="selectMode('leave')">LEAVE</button>
+  </div>
 
-<button id="sendBtn" class="send-btn" onclick="handleSendClick()">SEND TO WHATSAPP NOW</button>
-<div id="toast" class="toast"></div>
+  <div id="workerList" class="worker-list"></div>
+
+  <div class="toolbar-label">LIVE WHATSAPP MESSAGE PREVIEW:</div>
+  <div id="previewBox" class="preview-box"></div>
+
+  <button id="sendBtn" class="send-btn" onclick="handleSendClick('att')">SEND ATTENDANCE TO WHATSAPP</button>
+  <div id="toast" class="toast"></div>
+</div>
+
+<!-- WORK UPDATE SECTION -->
+<div id="workSection" style="display:none;">
+  <div class="toolbar-label">Type names or tap ▾ to pick from your saved workers.<br>Leave CAN blank if there are only PET counts.</div>
+
+  <div id="groupsContainer"></div>
+  <button class="add-group-btn" onclick="addWorkGroup()">+ ADD ANOTHER GROUP</button>
+
+  <div class="group-card">
+    <div class="group-card-header">
+      <span class="group-title">🔄 **SORTING**</span>
+    </div>
+    <div class="worker-pick-row">
+      <input type="text" id="sortInput" class="wu-input" placeholder="Type sorting worker name">
+      <select id="sortSelect" class="wu-select" onchange="if(this.value){document.getElementById('sortInput').value=this.value;this.value='';addSortingWorker();}"></select>
+      <button class="modal-btn" style="width:auto; padding:0 14px;" onclick="addSortingWorker()">+</button>
+    </div>
+    <div id="sortingChips"></div>
+  </div>
+
+  <div class="toolbar-label">LIVE WORK UPDATE PREVIEW:</div>
+  <div id="workPreviewBox" class="preview-box"></div>
+
+  <button id="sendWorkBtn" class="send-btn" onclick="handleSendClick('work')">SEND WORK UPDATE TO WHATSAPP</button>
+  <div id="workToast" class="toast"></div>
+</div>
 
 <!-- SETTINGS MODAL -->
 <div id="settingsModal" class="modal">
@@ -109,10 +164,10 @@
     </div>
 
     <div class="modal-section">
-        <h3 style="margin-top: 0; color: var(--text);">🏷️ Team Subtitle</h3>
-        <input type="text" id="teamNameInput" placeholder="e.g. MY TEAM">
+        <h3 style="margin-top: 0; color: var(--text);">🏷️ Team Subtitle (Optional)</h3>
+        <input type="text" id="teamNameInput" placeholder="Leave blank to hide subtitle">
     </div>
-    
+
     <div class="modal-section">
         <h3 style="margin-top: 0; color: var(--text);">👥 Workers List</h3>
         <div id="settingsWorkers"></div>
@@ -121,10 +176,20 @@
     </div>
 
     <div class="modal-section">
-        <h3 style="margin-top: 0; color: var(--text);">📱 WhatsApp Receivers</h3>
+        <h3 style="margin-top: 0; color: var(--text);">📋 Attendance WhatsApp Receivers</h3>
         <div id="settingsNumbers"></div>
         <input type="number" id="newNumber" placeholder="e.g. 2348000000000">
-        <button class="modal-btn" onclick="addNumber()">+ Add Number</button>
+        <button class="modal-btn" onclick="addNumber()">+ Add Attendance Number</button>
+    </div>
+
+    <div class="modal-section">
+        <h3 style="margin-top: 0; color: var(--text);">📦 Work Update WhatsApp Receivers</h3>
+        <p style="font-size:12px; color:#8b949e; margin-top:0;">Separate numbers/groups just for Rewrapping Work Updates.</p>
+        <div id="settingsWorkNumbers"></div>
+        <input type="number" id="newWorkNumber" placeholder="e.g. 2348000000000">
+        <button class="modal-btn" onclick="addWorkNumber()">+ Add Work Update Number</button>
+        <button class="modal-btn" style="margin-top:8px; background:#222a36;" onclick="loadGroupsFor('work')">👥 Pick a WhatsApp group for Work Update</button>
+        <div id="workGroupPickerList"></div>
     </div>
 
     <div class="modal-section">
@@ -149,29 +214,59 @@
 </div>
 
 <script>
-let config = { workers: [], numbers: [], teamName: "MY TEAM", currentShift: "" };
+let config = { workers: [], numbers: [], workNumbers: [], workGroups: [], sortingWorkers: [], teamName: "", currentShift: "" };
+let activeTab = 'att';
+let pendingSendTarget = 'att';
 let activeMode = null;
 let statuses = {};
-let formattedDate = new Date().toLocaleDateString('en-GB');
+let saveTimer = null;
+
+let now = new Date();
+let formattedDate = now.toLocaleDateString('en-GB');
+let shortDate = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getFullYear()).slice(-2);
 document.getElementById('dateDisplay').innerText = formattedDate;
+
+function defaultGroups() {
+    return ['A','B','C','D','E','F','G','H','I','J'].map(l => ({ name: 'Group ' + l, w1: '', w2: '', pet: '', can: '' }));
+}
+
+function updateHeaderInfo() {
+    const count = activeTab === 'work' ? (config.workNumbers || []).length : (config.numbers || []).length;
+    document.getElementById('receiversCount').innerText = `To: ${count} numbers`;
+    if (config.currentShift) {
+        document.getElementById('shiftTitle').innerText = config.currentShift + (activeTab === 'work' ? " WORK UPDATE" : " SHIFT ATTENDANCE");
+    } else {
+        document.getElementById('shiftTitle').innerText = "SELECT SHIFT";
+    }
+}
+
+function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tab-att').classList.toggle('active', tab === 'att');
+    document.getElementById('tab-work').classList.toggle('active', tab === 'work');
+    document.getElementById('attSection').style.display = tab === 'att' ? 'block' : 'none';
+    document.getElementById('workSection').style.display = tab === 'work' ? 'block' : 'none';
+    updateHeaderInfo();
+    if (tab === 'work') renderWorkUpdate();
+}
 
 async function loadData() {
     try {
         const res = await fetch('/api/config');
         config = await res.json();
-        
-        if(!config.currentShift) config.currentShift = "";
-        
+        if (typeof config.teamName !== 'string') config.teamName = "";
+        if (!config.currentShift) config.currentShift = "";
+        if (!Array.isArray(config.workNumbers)) config.workNumbers = [];
+        if (!Array.isArray(config.workGroups) || config.workGroups.length === 0) config.workGroups = defaultGroups();
+        if (!Array.isArray(config.sortingWorkers)) config.sortingWorkers = [];
+
         config.workers.forEach(w => { if (!statuses[w]) statuses[w] = 'present'; });
         Object.keys(statuses).forEach(w => { if (!config.workers.includes(w)) delete statuses[w]; });
 
-        document.getElementById('receiversCount').innerText = `To: ${config.numbers.length} numbers`;
         document.getElementById('teamNameInput').value = config.teamName;
-        
-        if (config.currentShift) {
-            document.getElementById('shiftTitle').innerText = config.currentShift + " SHIFT ATTENDANCE";
-        }
+        updateHeaderInfo();
         renderList();
+        renderWorkUpdate();
     } catch(e) { console.error("Failed to load config"); }
 }
 
@@ -185,71 +280,182 @@ async function saveConfig() {
     } catch(e) {}
 }
 
+function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveConfig, 800);
+}
+
+// ---------- ATTENDANCE LOGIC ----------
 function selectMode(mode) {
-  activeMode = (activeMode === mode) ? null : mode;
-  updateModeButtons();
+    activeMode = (activeMode === mode) ? null : mode;
+    updateModeButtons();
 }
 
 function updateModeButtons() {
-  ['off', 'absent', 'sick', 'leave'].forEach(m => {
-    document.getElementById('btn-' + m).className = 'mode-btn' + (activeMode === m ? ' glow-' + m : '');
-  });
+    ['off', 'absent', 'sick', 'leave'].forEach(m => {
+        document.getElementById('btn-' + m).className = 'mode-btn' + (activeMode === m ? ' glow-' + m : '');
+    });
 }
 
 function markWorker(name) {
-  fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
-  if (!activeMode) {
-    if (statuses[name] !== 'present') statuses[name] = 'present';
-    else alert("Tap ABSENT, SICK, or LEAVE first so the button glows, then tap the marker!");
-  } else {
-    statuses[name] = (statuses[name] === activeMode) ? 'present' : activeMode;
-  }
-  renderList();
+    fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
+    if (!activeMode) {
+        if (statuses[name] !== 'present') statuses[name] = 'present';
+        else alert("Tap OFF, ABSENT, SICK, or LEAVE first so the button glows, then tap the marker!");
+    } else {
+        statuses[name] = (statuses[name] === activeMode) ? 'present' : activeMode;
+    }
+    renderList();
 }
 
 async function toggleManualShift() {
-  config.currentShift = (config.currentShift === "AFTERNOON") ? "MORNING" : "AFTERNOON";
-  document.getElementById('shiftTitle').innerText = config.currentShift + " SHIFT ATTENDANCE";
-  await saveConfig();
-  updatePreview();
+    config.currentShift = (config.currentShift === "AFTERNOON") ? "MORNING" : "AFTERNOON";
+    updateHeaderInfo();
+    await saveConfig();
+    updatePreview();
+    updateWorkPreview();
 }
 
 function buildMessageText() {
-  const present = config.workers.filter(w => statuses[w] === 'present');
-  const absent = config.workers.filter(w => statuses[w] === 'absent');
-  const sick = config.workers.filter(w => statuses[w] === 'sick');
-  const leave = config.workers.filter(w => statuses[w] === 'leave');
-const off = config.workers.filter(w => statuses[w] === 'off');
+    const present = config.workers.filter(w => statuses[w] === 'present');
+    const absent = config.workers.filter(w => statuses[w] === 'absent');
+    const sick = config.workers.filter(w => statuses[w] === 'sick');
+    const leave = config.workers.filter(w => statuses[w] === 'leave');
+    const off = config.workers.filter(w => statuses[w] === 'off');
 
-  const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
-  
-  let msg = `${shiftDisplay} SHIFT ATTENDANCE \n${config.teamName ? "   " + config.teamName + " \n" : ""}  ${formattedDate}\n\n`;
-  present.forEach((name, idx) => { msg += `${idx + 1}. ${name}\n`; });
+    const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
+    const subLine = config.teamName ? `   ${config.teamName} \n` : "";
 
-  if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
-  if (sick.length > 0) msg += `\nSick \n` + sick.join('\n') + `\n`;
-  if (leave.length > 0) msg += `\nOn Leave \n` + leave.join('\n') + `\n`;
-if (off.length > 0) msg += `\nOff \n` + off.join(`\n`) + `\n`;
-  
-  return msg.trim();
+    let msg = `${shiftDisplay} SHIFT ATTENDANCE \n${subLine}  ${formattedDate}\n\n`;
+    present.forEach((name, idx) => { msg += `${idx + 1}. ${name}\n`; });
+
+    if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
+    if (sick.length > 0) msg += `\nSick \n` + sick.join('\n') + `\n`;
+    if (leave.length > 0) msg += `\nOn Leave \n` + leave.join('\n') + `\n`;
+    if (off.length > 0) msg += `\nOff \n` + off.join('\n') + `\n`;
+
+    return msg.trim();
 }
 
 function renderList() {
-  const container = document.getElementById('workerList');
-  container.innerHTML = '';
-  config.workers.forEach(name => {
-    const st = statuses[name];
-    const row = document.createElement('div');
-    row.className = `worker-row status-${st}`;
-    const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE', off: 'OFF' };
-    row.innerHTML = `<span class="worker-name">${name}</span><button class="marker-btn" onclick="markWorker('${name}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
-    container.appendChild(row);
-  });
-  updatePreview();
+    const container = document.getElementById('workerList');
+    container.innerHTML = '';
+    config.workers.forEach(name => {
+        const st = statuses[name];
+        const row = document.createElement('div');
+        row.className = `worker-row status-${st}`;
+        const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE', off: 'OFF' };
+        row.innerHTML = `<span class="worker-name">${name}</span><button class="marker-btn" onclick="markWorker('${name.replace(/'/g, "\\'")}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
+        container.appendChild(row);
+    });
+    updatePreview();
 }
 
 function updatePreview() { document.getElementById('previewBox').innerText = buildMessageText(); }
 
+// ---------- WORK UPDATE LOGIC ----------
+function workerOptionsHTML() {
+    return `<option value="">▾</option>` + config.workers.map(w => `<option value="${w.replace(/"/g, '&quot;')}">${w}</option>`).join('');
+}
+
+function renderWorkUpdate() {
+    const container = document.getElementById('groupsContainer');
+    const opts = workerOptionsHTML();
+    container.innerHTML = config.workGroups.map((g, idx) => `
+      <div class="group-card">
+        <div class="group-card-header">
+          <span class="group-title">${g.name}</span>
+          ${config.workGroups.length > 1 ? `<button class="group-del" onclick="removeWorkGroup(${idx})">Remove</button>` : ''}
+        </div>
+        <div class="worker-pick-row">
+          <input type="text" class="wu-input" placeholder="Worker 1 name" value="${(g.w1 || '').replace(/"/g, '&quot;')}" oninput="updateGroupField(${idx}, 'w1', this.value)">
+          <select class="wu-select" onchange="if(this.value){updateGroupField(${idx}, 'w1', this.value); renderWorkUpdate();}">${opts}</select>
+        </div>
+        <div class="worker-pick-row">
+          <input type="text" class="wu-input" placeholder="Worker 2 name" value="${(g.w2 || '').replace(/"/g, '&quot;')}" oninput="updateGroupField(${idx}, 'w2', this.value)">
+          <select class="wu-select" onchange="if(this.value){updateGroupField(${idx}, 'w2', this.value); renderWorkUpdate();}">${opts}</select>
+        </div>
+        <div class="totals-row">
+          <div class="total-field"><span>PET:</span><input type="number" inputmode="numeric" placeholder="0" value="${g.pet || ''}" oninput="updateGroupField(${idx}, 'pet', this.value)"></div>
+          <div class="total-field"><span>CAN (Opt):</span><input type="number" inputmode="numeric" placeholder="-" value="${g.can || ''}" oninput="updateGroupField(${idx}, 'can', this.value)"></div>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('sortSelect').innerHTML = opts;
+    document.getElementById('sortingChips').innerHTML = config.sortingWorkers.map((w, i) =>
+      `<span class="sort-chip">${w} <b onclick="removeSortingWorker(${i})">✕</b></span>`
+    ).join('');
+
+    updateWorkPreview();
+}
+
+function updateGroupField(idx, field, val) {
+    config.workGroups[idx][field] = val;
+    updateWorkPreview();
+    scheduleSave();
+}
+
+function addWorkGroup() {
+    const nextLetter = String.fromCharCode(65 + config.workGroups.length);
+    config.workGroups.push({ name: 'Group ' + nextLetter, w1: '', w2: '', pet: '', can: '' });
+    renderWorkUpdate();
+    scheduleSave();
+}
+
+function removeWorkGroup(idx) {
+    config.workGroups.splice(idx, 1);
+    config.workGroups.forEach((g, i) => { g.name = 'Group ' + String.fromCharCode(65 + i); });
+    renderWorkUpdate();
+    scheduleSave();
+}
+
+function addSortingWorker() {
+    const inp = document.getElementById('sortInput');
+    const val = inp.value.trim();
+    if (val && !config.sortingWorkers.includes(val)) {
+        config.sortingWorkers.push(val);
+        inp.value = '';
+        renderWorkUpdate();
+        scheduleSave();
+    }
+}
+
+function removeSortingWorker(idx) {
+    config.sortingWorkers.splice(idx, 1);
+    renderWorkUpdate();
+    scheduleSave();
+}
+
+function buildWorkMessageText() {
+    const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
+    let msg = `REWRAPPING UPDATE ${shiftDisplay} SHIFT \n   ${shortDate}\n\n`;
+
+    config.workGroups.forEach(g => {
+        const hasData = g.w1 || g.w2 || g.pet || g.can;
+        if (!hasData) return;
+        msg += `   ${g.name} \n`;
+        if (g.w1) msg += `${g.w1} \n`;
+        if (g.w2) msg += `${g.w2} \n`;
+        let totalLine = `   Total= ${g.pet || '0'}  PET`;
+        if (g.can && String(g.can).trim() !== '') {
+            totalLine += ` CAN ${g.can}`;
+        }
+        msg += `${totalLine} \n\n`;
+    });
+
+    if (config.sortingWorkers.length > 0) {
+        msg += `**SORTING**\n` + config.sortingWorkers.join('\n') + `\n`;
+    }
+
+    return msg.trim();
+}
+
+function updateWorkPreview() {
+    document.getElementById('workPreviewBox').innerText = buildWorkMessageText();
+}
+
+// ---------- SETTINGS & SENDING ----------
 function openSettings() { renderSettingsUI(); document.getElementById('settingsModal').style.display = 'block'; }
 
 async function closeSettings() {
@@ -262,10 +468,39 @@ async function closeSettings() {
 function renderSettingsUI() {
     document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500;">${w}</span> <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
+    document.getElementById('settingsWorkNumbers').innerHTML = (config.workNumbers || []).map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.workNumbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
 }
 
 function addWorker() { const val = document.getElementById('newWorker').value.trim(); if(val && !config.workers.includes(val)) { config.workers.push(val); document.getElementById('newWorker').value = ''; renderSettingsUI(); } }
 function addNumber() { const val = document.getElementById('newNumber').value.trim(); if(val && !config.numbers.includes(val)) { config.numbers.push(val); document.getElementById('newNumber').value = ''; renderSettingsUI(); } }
+function addWorkNumber() { const val = document.getElementById('newWorkNumber').value.trim(); if(val && !config.workNumbers.includes(val)) { config.workNumbers.push(val); document.getElementById('newWorkNumber').value = ''; renderSettingsUI(); } }
+
+async function loadGroupsFor(target) {
+    const box = document.getElementById('workGroupPickerList');
+    box.innerHTML = '<div style="padding:8px;color:#8b949e;font-size:13px;">Loading groups...</div>';
+    try {
+        const r = await fetch('/api/groups');
+        const g = await r.json();
+        if (!r.ok) throw new Error(g.error || 'Failed');
+        box.innerHTML = '';
+        if (!g.length) { box.innerHTML = '<div style="padding:8px;color:#8b949e;font-size:13px;">No groups found on this WhatsApp.</div>'; return; }
+        g.forEach(x => {
+            const b = document.createElement('button');
+            b.className = 'modal-btn';
+            b.style.cssText = 'margin-top:6px; text-align:left; background:#090d11;';
+            b.textContent = x.name;
+            b.onclick = () => {
+                if (!config.workNumbers.includes(x.id)) config.workNumbers.push(x.id);
+                renderSettingsUI();
+                b.textContent = '✅ ' + x.name;
+            };
+            box.appendChild(b);
+        });
+    } catch (e) {
+        box.innerHTML = '';
+        alert('Could not load groups: ' + e.message);
+    }
+}
 
 async function pairWhatsApp() {
     const phone = document.getElementById('pairPhone').value;
@@ -278,49 +513,56 @@ async function pairWhatsApp() {
     } catch(e) { document.getElementById('pairDisplay').innerText = "FAILED"; }
 }
 
-async function handleSendClick() {
+async function handleSendClick(target) {
+    pendingSendTarget = target;
     fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
-    
-    // If shift is not set yet, pop up the modal!
     if (!config.currentShift) {
         document.getElementById('shiftModal').style.display = 'flex';
         return;
     }
-    await sendAttendance();
+    await executeSend(target);
 }
 
 async function setShiftAndSend(shift) {
     config.currentShift = shift;
-    document.getElementById('shiftTitle').innerText = shift + " SHIFT ATTENDANCE";
+    updateHeaderInfo();
     document.getElementById('shiftModal').style.display = 'none';
     await saveConfig();
     updatePreview();
-    await sendAttendance();
+    updateWorkPreview();
+    await executeSend(pendingSendTarget);
 }
 
-async function sendAttendance() {
-  const btn = document.getElementById('sendBtn');
-  const toast = document.getElementById('toast');
-  const text = buildMessageText();
+async function executeSend(target) {
+    const isWork = target === 'work';
+    const btn = document.getElementById(isWork ? 'sendWorkBtn' : 'sendBtn');
+    const toast = document.getElementById(isWork ? 'workToast' : 'toast');
+    const text = isWork ? buildWorkMessageText() : buildMessageText();
+    const defaultLabel = isWork ? "SEND WORK UPDATE TO WHATSAPP" : "SEND ATTENDANCE TO WHATSAPP";
 
-  btn.disabled = true;
-  btn.innerText = "SENDING TO WHATSAPP...";
-  toast.style.display = 'none';
+    btn.disabled = true;
+    btn.innerText = "SENDING TO WHATSAPP...";
+    toast.style.display = 'none';
 
-  try {
-    const res = await fetch('/api/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
-    const data = await res.json();
-    toast.style.display = 'block';
-    if (data.success) {
-      toast.style.background = '#238636'; toast.style.color = '#fff';
-      toast.innerText = '✅ Attendance Sent Successfully!';
-      btn.innerText = "SENT ✅";
-    } else throw new Error(data.error || 'Failed to send');
-  } catch (err) {
-    toast.style.display = 'block'; toast.style.background = '#da3633'; toast.style.color = '#fff';
-    toast.innerText = '❌ Error: ' + err.message;
-    btn.disabled = false; btn.innerText = "RETRY SEND TO WHATSAPP";
-  }
+    try {
+        const res = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, target })
+        });
+        const data = await res.json();
+        toast.style.display = 'block';
+        if (data.success) {
+            toast.style.background = '#238636'; toast.style.color = '#fff';
+            toast.innerText = isWork ? '✅ Work Update Sent Successfully!' : '✅ Attendance Sent Successfully!';
+            btn.innerText = "SENT ✅";
+            setTimeout(() => { btn.disabled = false; btn.innerText = defaultLabel; }, 3000);
+        } else throw new Error(data.error || 'Failed to send');
+    } catch (err) {
+        toast.style.display = 'block'; toast.style.background = '#da3633'; toast.style.color = '#fff';
+        toast.innerText = '❌ Error: ' + err.message;
+        btn.disabled = false; btn.innerText = "RETRY SEND TO WHATSAPP";
+    }
 }
 
 // Init
@@ -328,9 +570,11 @@ loadData().then(() => {
     setInterval(async () => {
         try {
             const res = await fetch('/api/status');
-            if(res.ok) { const st = await res.json();
+            if(res.ok) {
+                const st = await res.json();
                 const waEl = document.getElementById('waStatus');
-                if (st.connected) { waEl.innerText = "● WA Ready"; waEl.className = "wa-status wa-online"; } else { waEl.innerText = "● WA Not Linked"; waEl.className = "wa-status wa-offline"; }
+                if (st.connected) { waEl.innerText = "● WA Ready"; waEl.className = "wa-status wa-online"; }
+                else { waEl.innerText = "● WA Not Linked"; waEl.className = "wa-status wa-offline"; }
             }
         } catch (e) {
             const waEl = document.getElementById('waStatus');
@@ -340,100 +584,100 @@ loadData().then(() => {
 });
 
 (function(){
-  var b = document.createElement('div');
-  b.style.cssText = 'display:none;margin:10px;padding:12px;border-radius:10px;background:#1c2a1f;color:#7ee787;text-align:center;font-size:14px;';
-  b.textContent = '👋 Welcome! Tap the ⚙️ gear to add your workers, add receiver numbers, and link WhatsApp.';
-  document.body.insertBefore(b, document.body.firstChild);
-  setInterval(function(){ b.style.display = (config.workers.length === 0) ? 'block' : 'none'; }, 1000);
+    var b = document.createElement('div');
+    b.style.cssText = 'display:none;margin:10px;padding:12px;border-radius:10px;background:#1c2a1f;color:#7ee787;text-align:center;font-size:14px;';
+    b.textContent = '👋 Welcome! Tap the ⚙️ gear to add your workers, add receiver numbers, and link WhatsApp.';
+    document.body.insertBefore(b, document.body.firstChild);
+    setInterval(function(){ b.style.display = (config.workers.length === 0) ? 'block' : 'none'; }, 1000);
 })();
 
 (function(){
-  var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;text-align:left;';
-  function mount(){
-    var inp = document.querySelector('input[placeholder^="e.g. 2348"]');
-    if(!inp || document.getElementById('grpBox')) return;
-    var box = document.createElement('div'); box.id = 'grpBox';
-    var btn = document.createElement('button');
-    var label = '\ud83d\udc65 Pick a WhatsApp group';
-    btn.textContent = label; btn.style.cssText = BTN + 'text-align:center;';
-    var list = document.createElement('div');
-    btn.onclick = async function(){
-      btn.textContent = 'Loading groups...';
-      try {
-        var r = await fetch('/api/groups');
-        var g = await r.json();
-        if(!r.ok) throw new Error(g.error || 'Failed');
-        list.innerHTML = '';
-        if(!g.length) list.textContent = 'No groups found on this WhatsApp.';
-        g.forEach(function(x){
-          var b = document.createElement('button');
-          b.textContent = x.name; b.style.cssText = BTN;
-          b.onclick = function(){
-            if(config.numbers.indexOf(x.id) === -1) config.numbers.push(x.id);
-            renderSettingsUI();
-            b.textContent = '\u2705 ' + x.name;
-          };
-          list.appendChild(b);
-        });
-      } catch(e){ alert('Could not load groups: ' + e.message); }
-      btn.textContent = label;
-    };
-    box.appendChild(btn); box.appendChild(list);
-    inp.parentElement.appendChild(box);
-  }
-  setInterval(mount, 800);
-})();
-
-(function(){
-  var FIELD = 'background:#000;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;box-sizing:border-box;font-size:14px;font-family:inherit;';
-  var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;';
-  function parse(text){
-    var out = [];
-    text.split(/\r?\n/).forEach(function(line){
-      var n = line.replace(/^\s*(?:\d+\s*[.)\-:]|[-*\u2022\u00b7])\s*/, '').replace(/\s+/g, ' ').trim();
-      if(n) out.push(n.slice(0, 60));
-    });
-    return out;
-  }
-  function mount(){
-    var inp = document.getElementById('newWorker');
-    if(!inp || document.getElementById('pasteBox')) return;
-    var box = document.createElement('div'); box.id = 'pasteBox';
-    var toggle = document.createElement('button');
-    toggle.textContent = '\ud83d\udccb Paste list of names'; toggle.style.cssText = BTN;
-    var panel = document.createElement('div'); panel.style.display = 'none';
-    var ta = document.createElement('textarea');
-    ta.rows = 8; ta.style.cssText = FIELD + 'margin-top:8px;';
-    ta.placeholder = '1. Example Example\n2. Example Example\n3. Example Example';
-    var addBtn = document.createElement('button');
-    addBtn.textContent = '+ Add these names'; addBtn.style.cssText = BTN;
-    var repBtn = document.createElement('button');
-    repBtn.textContent = 'Replace whole list'; repBtn.style.cssText = BTN;
-    var msg = document.createElement('div');
-    msg.style.cssText = 'margin-top:8px;font-size:13px;color:#7ee787;';
-    toggle.onclick = function(){ panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
-    function apply(replace){
-      var names = parse(ta.value);
-      if(!names.length){ msg.textContent = 'Nothing to add. Paste your names first.'; return; }
-      if(replace && !confirm('Replace your whole workers list with these ' + names.length + ' names?')) return;
-      if(replace) config.workers = [];
-      var have = {}; config.workers.forEach(function(w){ have[w.toLowerCase()] = 1; });
-      var added = 0, skipped = 0;
-      names.forEach(function(n){
-        if(have[n.toLowerCase()]){ skipped++; return; }
-        have[n.toLowerCase()] = 1; config.workers.push(n); added++;
-      });
-      renderSettingsUI();
-      ta.value = '';
-      msg.textContent = 'Added ' + added + (skipped ? ', skipped ' + skipped + ' duplicate(s)' : '') + '. Tap SAVE CHANGES to keep them.';
+    var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;text-align:left;';
+    function mount(){
+        var inp = document.getElementById('newNumber');
+        if(!inp || document.getElementById('grpBox')) return;
+        var box = document.createElement('div'); box.id = 'grpBox';
+        var btn = document.createElement('button');
+        var label = '👥 Pick a WhatsApp group for Attendance';
+        btn.textContent = label; btn.style.cssText = BTN + 'text-align:center;';
+        var list = document.createElement('div');
+        btn.onclick = async function(){
+            btn.textContent = 'Loading groups...';
+            try {
+                var r = await fetch('/api/groups');
+                var g = await r.json();
+                if(!r.ok) throw new Error(g.error || 'Failed');
+                list.innerHTML = '';
+                if(!g.length) list.textContent = 'No groups found on this WhatsApp.';
+                g.forEach(function(x){
+                    var b = document.createElement('button');
+                    b.textContent = x.name; b.style.cssText = BTN;
+                    b.onclick = function(){
+                        if(config.numbers.indexOf(x.id) === -1) config.numbers.push(x.id);
+                        renderSettingsUI();
+                        b.textContent = '✅ ' + x.name;
+                    };
+                    list.appendChild(b);
+                });
+            } catch(e){ alert('Could not load groups: ' + e.message); }
+            btn.textContent = label;
+        };
+        box.appendChild(btn); box.appendChild(list);
+        inp.parentElement.appendChild(box);
     }
-    addBtn.onclick = function(){ apply(false); };
-    repBtn.onclick = function(){ apply(true); };
-    panel.appendChild(ta); panel.appendChild(addBtn); panel.appendChild(repBtn); panel.appendChild(msg);
-    box.appendChild(toggle); box.appendChild(panel);
-    inp.parentElement.appendChild(box);
-  }
-  setInterval(mount, 800);
+    setInterval(mount, 800);
+})();
+
+(function(){
+    var FIELD = 'background:#000;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;box-sizing:border-box;font-size:14px;font-family:inherit;';
+    var BTN = 'background:#222a36;color:#fff;border:1px solid #2d3748;border-radius:10px;padding:12px;width:100%;margin-top:8px;font-size:14px;';
+    function parse(text){
+        var out = [];
+        text.split(/\r?\n/).forEach(function(line){
+            var n = line.replace(/^\s*(?:\d+\s*[.)\-:]|[-*\u2022\u00b7])\s*/, '').replace(/\s+/g, ' ').trim();
+            if(n) out.push(n.slice(0, 60));
+        });
+        return out;
+    }
+    function mount(){
+        var inp = document.getElementById('newWorker');
+        if(!inp || document.getElementById('pasteBox')) return;
+        var box = document.createElement('div'); box.id = 'pasteBox';
+        var toggle = document.createElement('button');
+        toggle.textContent = '📋 Paste list of names'; toggle.style.cssText = BTN;
+        var panel = document.createElement('div'); panel.style.display = 'none';
+        var ta = document.createElement('textarea');
+        ta.rows = 8; ta.style.cssText = FIELD + 'margin-top:8px;';
+        ta.placeholder = '1. Example Example\n2. Example Example\n3. Example Example';
+        var addBtn = document.createElement('button');
+        addBtn.textContent = '+ Add these names'; addBtn.style.cssText = BTN;
+        var repBtn = document.createElement('button');
+        repBtn.textContent = 'Replace whole list'; repBtn.style.cssText = BTN;
+        var msg = document.createElement('div');
+        msg.style.cssText = 'margin-top:8px;font-size:13px;color:#7ee787;';
+        toggle.onclick = function(){ panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
+        function apply(replace){
+            var names = parse(ta.value);
+            if(!names.length){ msg.textContent = 'Nothing to add. Paste your names first.'; return; }
+            if(replace && !confirm('Replace your whole workers list with these ' + names.length + ' names?')) return;
+            if(replace) config.workers = [];
+            var have = {}; config.workers.forEach(function(w){ have[w.toLowerCase()] = 1; });
+            var added = 0, skipped = 0;
+            names.forEach(function(n){
+                if(have[n.toLowerCase()]){ skipped++; return; }
+                have[n.toLowerCase()] = 1; config.workers.push(n); added++;
+            });
+            renderSettingsUI();
+            ta.value = '';
+            msg.textContent = 'Added ' + added + (skipped ? ', skipped ' + skipped + ' duplicate(s)' : '') + '. Tap SAVE CHANGES to keep them.';
+        }
+        addBtn.onclick = function(){ apply(false); };
+        repBtn.onclick = function(){ apply(true); };
+        panel.appendChild(ta); panel.appendChild(addBtn); panel.appendChild(repBtn); panel.appendChild(msg);
+        box.appendChild(toggle); box.appendChild(panel);
+        inp.parentElement.appendChild(box);
+    }
+    setInterval(mount, 800);
 })();
 </script>
 </body>

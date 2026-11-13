@@ -146,7 +146,7 @@ const app = express();
 app.use(express.json({ limit: '100kb' }));
 
 const ID_RE = /^[a-f0-9-]{36}$/;
-const DEFAULTS = { workers: [], numbers: [], teamName: 'MY TEAM', currentShift: '' };
+const DEFAULTS = { workers: [], numbers: [], workNumbers: [], workGroups: [], sortingWorkers: [], teamName: 'MY TEAM', currentShift: '' };
 
 async function loadConfig(id) {
     const v = await kvGet(id, 'config');
@@ -233,6 +233,15 @@ app.post('/api/config', async (req, res) => {
         const cfg = await loadConfig(req.deviceId);
         if (Array.isArray(b.workers)) cfg.workers = b.workers.map(w => String(w).trim().slice(0, 60)).filter(Boolean).slice(0, 200);
         if (Array.isArray(b.numbers)) cfg.numbers = [...new Set(b.numbers.map(cleanRecipient).filter(n => n.length >= 10))].slice(0, 50);
+        if (Array.isArray(b.workNumbers)) cfg.workNumbers = [...new Set(b.workNumbers.map(cleanRecipient).filter(n => n.length >= 10))].slice(0, 50);
+        if (Array.isArray(b.workGroups)) cfg.workGroups = b.workGroups.slice(0, 26).map(g => ({
+            name: String(g.name || '').trim().slice(0, 20),
+            w1: String(g.w1 || '').trim().slice(0, 60),
+            w2: String(g.w2 || '').trim().slice(0, 60),
+            pet: String(g.pet || '').trim().slice(0, 15),
+            can: String(g.can || '').trim().slice(0, 15)
+        }));
+        if (Array.isArray(b.sortingWorkers)) cfg.sortingWorkers = b.sortingWorkers.map(w => String(w).trim().slice(0, 60)).filter(Boolean).slice(0, 50);
         if (typeof b.teamName === 'string') cfg.teamName = b.teamName.trim().slice(0, 40);
         if (typeof b.currentShift === 'string') cfg.currentShift = b.currentShift.slice(0, 20);
         await kvSet(req.deviceId, 'config', JSON.stringify(cfg));
@@ -297,10 +306,11 @@ app.post('/api/send', async (req, res) => {
     if (!s || !s.connected) return res.status(500).json({ error: 'WhatsApp not connected' });
     try {
         const cfg = await loadConfig(id);
-        if (!cfg.numbers.length) return res.status(400).json({ error: 'No receiver numbers added' });
+        const targetList = (req.body && req.body.target === 'work') ? (cfg.workNumbers || []) : cfg.numbers;
+        if (!targetList.length) return res.status(400).json({ error: req.body && req.body.target === 'work' ? 'No Work Update receiver numbers added' : 'No receiver numbers added' });
         const text = String((req.body && req.body.text) || '').slice(0, 4000);
         if (!text) return res.status(400).json({ error: 'Empty message' });
-        for (const num of cfg.numbers) await s.sock.sendMessage(num.endsWith('@g.us') ? num : num + '@s.whatsapp.net', { text });
+        for (const num of targetList) await s.sock.sendMessage(num.endsWith('@g.us') ? num : num + '@s.whatsapp.net', { text });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
