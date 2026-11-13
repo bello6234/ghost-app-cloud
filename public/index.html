@@ -159,7 +159,7 @@ async function loadData() {
     try {
         const res = await fetch('/api/config');
         config = await res.json();
-        if(!config.teamName) config.teamName = "MY TEAM";
+        
         if(!config.currentShift) config.currentShift = "";
         
         config.workers.forEach(w => { if (!statuses[w]) statuses[w] = 'present'; });
@@ -223,7 +223,7 @@ const off = config.workers.filter(w => statuses[w] === 'off');
 
   const shiftDisplay = config.currentShift ? config.currentShift : "[SHIFT NOT SET]";
   
-  let msg = `${shiftDisplay} SHIFT ATTENDANCE \n   ${config.teamName} \n  ${formattedDate}\n\n`;
+  let msg = `${shiftDisplay} SHIFT ATTENDANCE \n${config.teamName ? "   " + config.teamName + " \n" : ""}  ${formattedDate}\n\n`;
   present.forEach((name, idx) => { msg += `${idx + 1}. ${name}\n`; });
 
   if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
@@ -253,7 +253,7 @@ function updatePreview() { document.getElementById('previewBox').innerText = bui
 function openSettings() { renderSettingsUI(); document.getElementById('settingsModal').style.display = 'block'; }
 
 async function closeSettings() {
-    config.teamName = document.getElementById('teamNameInput').value.trim() || "MY TEAM";
+    config.teamName = document.getElementById('teamNameInput').value.trim();
     await saveConfig();
     document.getElementById('settingsModal').style.display = 'none';
     await loadData();
