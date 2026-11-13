@@ -59,7 +59,7 @@
   .worker-pick-row { display: flex; gap: 6px; margin-bottom: 8px; }
   .wu-input, .wu-select { background: #010409; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; font-size: 14px; user-select: text; }
   .wu-input { flex: 1; min-width: 0; }
-  .wu-select { width: 42px; text-align: center; font-weight: bold; color: var(--accent); }
+  .wu-select { width: 105px; flex-shrink: 0; text-align: center; font-weight: 800; font-size: 14px; color: #fff; background: #1f6feb; border-color: #388bfd; cursor: pointer; }
   .totals-row { display: flex; gap: 8px; margin-top: 6px; }
   .total-field { flex: 1; display: flex; align-items: center; background: #090d11; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; }
   .total-field span { font-size: 12px; font-weight: 800; color: #8b949e; margin-right: 6px; }
@@ -355,7 +355,21 @@ function updatePreview() { document.getElementById('previewBox').innerText = bui
 
 // ---------- WORK UPDATE LOGIC ----------
 function workerOptionsHTML() {
-    return `<option value="">▾</option>` + config.workers.map(w => `<option value="${w.replace(/"/g, '&quot;')}">${w}</option>`).join('');
+    const used = new Set();
+    (config.workGroups || []).forEach(g => {
+        if (g.w1 && g.w1.trim()) used.add(g.w1.trim().toLowerCase());
+        if (g.w2 && g.w2.trim()) used.add(g.w2.trim().toLowerCase());
+    });
+    (config.sortingWorkers || []).forEach(w => {
+        if (w && w.trim()) used.add(w.trim().toLowerCase());
+    });
+    const available = config.workers.filter(w => !used.has(w.trim().toLowerCase()));
+    return `<option value="">Pick ▾ (${available.length})</option>` + available.map(w => `<option value="${w.replace(/"/g, '&quot;')}">${w}</option>`).join('');
+}
+
+function refreshAllDropdowns() {
+    const opts = workerOptionsHTML();
+    document.querySelectorAll('.wu-select').forEach(sel => { sel.innerHTML = opts; });
 }
 
 function renderWorkUpdate() {
@@ -392,6 +406,7 @@ function renderWorkUpdate() {
 
 function updateGroupField(idx, field, val) {
     config.workGroups[idx][field] = val;
+    if (field === 'w1' || field === 'w2') refreshAllDropdowns();
     updateWorkPreview();
     scheduleSave();
 }
