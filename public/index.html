@@ -135,7 +135,10 @@
   <div class="toolbar-label">Type names or tap ▾ to pick from your saved workers.<br>Leave CAN blank if there are only PET counts.</div>
 
   <div id="groupsContainer"></div>
-  <button class="add-group-btn" onclick="addWorkGroup()">+ ADD ANOTHER GROUP</button>
+  <div style="display:flex; gap:8px; margin-bottom:14px;">
+    <button class="add-group-btn" style="flex:2; margin-bottom:0;" onclick="addWorkGroup()">+ ADD GROUP</button>
+    <button class="add-group-btn" style="flex:1; margin-bottom:0; border-color:#f85149; color:#f85149; background:rgba(248,81,73,0.08);" onclick="resetWorkUpdate()">🔄 NEW DAY</button>
+  </div>
 
   <div class="group-card">
     <div class="group-card-header">
@@ -409,6 +412,20 @@ function updateGroupField(idx, field, val) {
     if (field === 'w1' || field === 'w2') refreshAllDropdowns();
     updateWorkPreview();
     scheduleSave();
+}
+
+function resetWorkUpdate() {
+    if (!confirm("Clear all group names, counts, and sorting for a new day?")) return;
+    config.workGroups = config.workGroups.map((g, i) => ({
+        name: 'Group ' + String.fromCharCode(65 + i),
+        w1: '',
+        w2: '',
+        pet: '',
+        can: ''
+    }));
+    config.sortingWorkers = [];
+    renderWorkUpdate();
+    saveConfig();
 }
 
 function addWorkGroup() {
