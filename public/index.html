@@ -239,6 +239,32 @@ let formattedDate = now.toLocaleDateString('en-GB');
 let shortDate = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getFullYear()).slice(-2);
 document.getElementById('dateDisplay').innerText = formattedDate;
 
+function getCurrentWeekSundayMs() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // Sunday = 0, so this snaps back to Sunday 00:00 of the current week
+    return d.getTime();
+}
+
+function checkWeeklyShiftRotation() {
+    if (!config.currentShift) return false;
+    const thisSunday = getCurrentWeekSundayMs();
+    if (!config.shiftWeekStart) {
+        config.shiftWeekStart = thisSunday;
+        return true;
+    }
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksPassed = Math.round((thisSunday - config.shiftWeekStart) / msPerWeek);
+    if (weeksPassed >= 1) {
+        if (weeksPassed % 2 === 1) {
+            config.currentShift = (config.currentShift === 'MORNING') ? 'AFTERNOON' : 'MORNING';
+        }
+        config.shiftWeekStart = thisSunday;
+        return true;
+    }
+    return false;
+}
+
 function defaultGroups() {
     return ['A','B','C','D','E','F','G','H','I','J'].map(l => ({ name: 'Group ' + l, w1: '', w2: '', pet: '', can: '' }));
 }
@@ -269,6 +295,9 @@ async function loadData() {
         config = await res.json();
         if (typeof config.teamName !== 'string') config.teamName = "";
         if (!config.currentShift) config.currentShift = "";
+        if (checkWeeklyShiftRotation()) {
+            await saveConfig();
+        }
         if (!Array.isArray(config.workNumbers)) config.workNumbers = [];
         if (!Array.isArray(config.workGroups) || config.workGroups.length === 0) config.workGroups = defaultGroups();
         if (!Array.isArray(config.sortingWorkers)) config.sortingWorkers = [];
@@ -323,6 +352,7 @@ function markWorker(name) {
 
 async function toggleManualShift() {
     config.currentShift = (config.currentShift === "AFTERNOON") ? "MORNING" : "AFTERNOON";
+    config.shiftWeekStart = getCurrentWeekSundayMs();
     updateHeaderInfo();
     await saveConfig();
     updatePreview();
@@ -624,6 +654,7 @@ async function handleSendClick(target) {
 
 async function setShiftAndSend(shift) {
     config.currentShift = shift;
+    config.shiftWeekStart = getCurrentWeekSundayMs();
     updateHeaderInfo();
     document.getElementById('shiftModal').style.display = 'none';
     await saveConfig();

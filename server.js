@@ -146,7 +146,7 @@ const app = express();
 app.use(express.json({ limit: '100kb' }));
 
 const ID_RE = /^[a-f0-9-]{36}$/;
-const DEFAULTS = { workers: [], numbers: [], workNumbers: [], workGroups: [], sortingWorkers: [], teamName: 'MY TEAM', currentShift: '' };
+const DEFAULTS = { workers: [], numbers: [], workNumbers: [], workGroups: [], sortingWorkers: [], teamName: 'MY TEAM', currentShift: '', shiftWeekStart: 0 };
 
 async function loadConfig(id) {
     const v = await kvGet(id, 'config');
@@ -244,6 +244,7 @@ app.post('/api/config', async (req, res) => {
         if (Array.isArray(b.sortingWorkers)) cfg.sortingWorkers = b.sortingWorkers.map(w => String(w).trim().slice(0, 60)).filter(Boolean).slice(0, 50);
         if (typeof b.teamName === 'string') cfg.teamName = b.teamName.trim().slice(0, 40);
         if (typeof b.currentShift === 'string') cfg.currentShift = b.currentShift.slice(0, 20);
+        if (typeof b.shiftWeekStart === 'number') cfg.shiftWeekStart = b.shiftWeekStart;
         await kvSet(req.deviceId, 'config', JSON.stringify(cfg));
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
