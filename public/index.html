@@ -83,6 +83,9 @@
   .close-modal { width: 100%; background: #238636; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; margin-top: 10px; }
   .list-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: #090d11; border-radius: 6px; border: 1px solid var(--border); align-items: center;}
   .del-btn { color: #f85149; cursor: pointer; font-weight: bold; padding: 5px 10px; background: rgba(248, 81, 73, 0.1); border-radius: 4px;}
+  .order-btns { display: flex; gap: 6px; align-items: center; }
+  .move-btn { background: #21262d; border: 1px solid var(--border); color: #58a6ff; font-weight: 800; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .move-btn:disabled { opacity: 0.25; cursor: default; }
 
   #shiftModal { background: rgba(13,17,23,0.95); display: flex; align-items: center; justify-content: center; }
   .shift-box { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; width: 100%; max-width: 320px; }
@@ -172,7 +175,13 @@
     </div>
 
     <div class="modal-section">
-        <h3 style="margin-top: 0; color: var(--text);">👥 Workers List</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3 style="margin: 0; color: var(--text);">👥 Workers List</h3>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="move-btn" style="color:#7ee787;" onclick="shuffleWorkers()">🔀 Shuffle</button>
+            <button type="button" class="move-btn" onclick="sortWorkersAZ()">A–Z</button>
+          </div>
+        </div>
         <div id="settingsWorkers"></div>
         <input type="text" id="newWorker" placeholder="Type new worker name">
         <button class="modal-btn" onclick="addWorker()">+ Add Worker</button>
@@ -497,8 +506,38 @@ async function closeSettings() {
     await loadData();
 }
 
+function moveWorker(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= config.workers.length) return;
+    const temp = config.workers[idx];
+    config.workers[idx] = config.workers[target];
+    config.workers[target] = temp;
+    renderSettingsUI();
+}
+
+function shuffleWorkers() {
+    for (let i = config.workers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [config.workers[i], config.workers[j]] = [config.workers[j], config.workers[i]];
+    }
+    renderSettingsUI();
+}
+
+function sortWorkersAZ() {
+    config.workers.sort((a, b) => a.localeCompare(b));
+    renderSettingsUI();
+}
+
 function renderSettingsUI() {
-    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500;">${w}</span> <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
+    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `
+      <div class="list-item">
+        <span style="font-weight:500; flex:1; padding-right:8px;">${i + 1}. ${w}</span>
+        <div class="order-btns">
+          <button type="button" class="move-btn" ${i === 0 ? 'disabled' : ''} onclick="moveWorker(${i}, -1)">▲</button>
+          <button type="button" class="move-btn" ${i === config.workers.length - 1 ? 'disabled' : ''} onclick="moveWorker(${i}, 1)">▼</button>
+          <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">✕</span>
+        </div>
+      </div>`).join('');
     document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsWorkNumbers').innerHTML = (config.workNumbers || []).map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.workNumbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
 }
