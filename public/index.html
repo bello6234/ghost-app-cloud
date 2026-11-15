@@ -133,6 +133,26 @@
   </div>
   <div id="workerList" class="worker-list"></div>
 
+  <div style="margin-bottom: 14px;">
+    <button type="button" id="toggleTomorrowBtn" class="add-group-btn" style="margin-bottom: 0; border-color: #d29922; color: #e3b341; background: rgba(210, 153, 34, 0.08);" onclick="toggleTomorrowSection()">📅 + ADD PEOPLE ON DUTY TOMORROW</button>
+    <div id="tomorrowSection" class="group-card" style="display:none; margin-top:10px; border-color:#d29922;">
+      <div class="group-card-header">
+        <span class="group-title" style="color:#e3b341;">📅 ON DUTY TOMORROW (<span id="tomDateLabel"></span>)</span>
+        <button type="button" class="group-del" onclick="clearTomorrowDuty()">Clear</button>
+      </div>
+      <div style="display:flex; gap:6px; margin-bottom:10px;">
+        <button type="button" id="tomShiftMorning" class="modal-btn" style="flex:1; background:#d29922; color:#000; border:none;" onclick="setTomorrowShift('MORNING')">🌅 MORNING</button>
+        <button type="button" id="tomShiftAfternoon" class="modal-btn" style="flex:1;" onclick="setTomorrowShift('AFTERNOON')">🌇 AFTERNOON</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:12px; color:#8b949e;">Tap names below to select for tomorrow:</span>
+        <button type="button" class="move-btn" style="color:#7ee787;" onclick="selectAllPresentTomorrow()">+ All Present</button>
+      </div>
+      <div id="tomChipPool" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+      <div id="tomorrowList" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;"></div>
+    </div>
+  </div>
+
   <div class="toolbar-label">LIVE WHATSAPP MESSAGE PREVIEW:</div>
   <div id="previewBox" class="preview-box"></div>
 
@@ -238,6 +258,11 @@ let now = new Date();
 let formattedDate = now.toLocaleDateString('en-GB');
 let shortDate = String(now.getDate()).padStart(2,'0') + '/' + String(now.getMonth()+1).padStart(2,'0') + '/' + String(now.getFullYear()).slice(-2);
 document.getElementById('dateDisplay').innerText = formattedDate;
+let tomorrowDuty = [];
+let tomorrowShift = 'MORNING';
+let tomorrowOpen = false;
+let tomDateObj = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+let tomorrowShortDate = String(tomDateObj.getDate()).padStart(2,'0') + '/' + String(tomDateObj.getMonth()+1).padStart(2,'0') + '/' + String(tomDateObj.getFullYear()).slice(-2);
 
 function getCurrentWeekSundayMs() {
     const d = new Date();
@@ -399,7 +424,90 @@ function renderList() {
           <button class="marker-btn" style="flex-shrink:0;" onclick="markWorker('${name.replace(/'/g, "\\'")}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
         container.appendChild(row);
     });
+    renderTomorrowDuty();
     updatePreview();
+}
+
+function toggleTomorrowSection() {
+    tomorrowOpen = !tomorrowOpen;
+    document.getElementById('tomorrowSection').style.display = tomorrowOpen ? 'block' : 'none';
+    document.getElementById('toggleTomorrowBtn').innerText = tomorrowOpen ? '📅 HIDE PEOPLE ON DUTY TOMORROW' : '📅 + ADD PEOPLE ON DUTY TOMORROW';
+    renderTomorrowDuty();
+}
+
+function setTomorrowShift(shift) {
+    tomorrowShift = shift;
+    const mBtn = document.getElementById('tomShiftMorning');
+    const aBtn = document.getElementById('tomShiftAfternoon');
+    if (shift === 'MORNING') {
+        mBtn.style.background = '#d29922'; mBtn.style.color = '#000';
+        aBtn.style.background = '#21262d'; aBtn.style.color = '#fff';
+    } else {
+        aBtn.style.background = '#58a6ff'; aBtn.style.color = '#000';
+        mBtn.style.background = '#21262d'; mBtn.style.color = '#fff';
+    }
+    updatePreview();
+}
+
+function toggleTomorrowWorker(name) {
+    const idx = tomorrowDuty.indexOf(name);
+    if (idx === -1) tomorrowDuty.push(name);
+    else tomorrowDuty.splice(idx, 1);
+    renderTomorrowDuty();
+    updatePreview();
+}
+
+function selectAllPresentTomorrow() {
+    config.workers.forEach(w => {
+        if (statuses[w] === 'present' && !tomorrowDuty.includes(w)) {
+            tomorrowDuty.push(w);
+        }
+    });
+    renderTomorrowDuty();
+    updatePreview();
+}
+
+function moveTomorrowWorker(idx, dir) {
+    const target = idx + dir;
+    if (target < 0 || target >= tomorrowDuty.length) return;
+    [tomorrowDuty[idx], tomorrowDuty[target]] = [tomorrowDuty[target], tomorrowDuty[idx]];
+    renderTomorrowDuty();
+    updatePreview();
+}
+
+function removeTomorrowWorker(idx) {
+    tomorrowDuty.splice(idx, 1);
+    renderTomorrowDuty();
+    updatePreview();
+}
+
+function clearTomorrowDuty() {
+    tomorrowDuty = [];
+    renderTomorrowDuty();
+    updatePreview();
+}
+
+function renderTomorrowDuty() {
+    const lbl = document.getElementById('tomDateLabel');
+    if (lbl) lbl.innerText = tomorrowShortDate;
+    const pool = document.getElementById('tomChipPool');
+    if (pool) {
+        pool.innerHTML = config.workers.map(w => {
+            const active = tomorrowDuty.includes(w);
+            return `<button type="button" onclick="toggleTomorrowWorker('${w.replace(/'/g, "\\'")}')" style="padding:7px 11px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid ${active ? '#d29922' : '#30363d'}; background:${active ? 'rgba(210,153,34,0.22)' : '#090d11'}; color:${active ? '#e3b341' : '#c9d1d9'};">${active ? '✓ ' : '+ '}${w}</button>`;
+        }).join('');
+    }
+    const list = document.getElementById('tomorrowList');
+    if (!list) return;
+    list.innerHTML = tomorrowDuty.map((name, i) => `
+      <div class="list-item" style="margin-bottom:0; padding:8px 10px;">
+        <span style="font-size:14px; font-weight:500; flex:1;">${i + 1}. ${name}</span>
+        <div class="order-btns">
+          <button type="button" class="move-btn" style="padding:4px 7px;" ${i === 0 ? 'disabled' : ''} onclick="moveTomorrowWorker(${i}, -1)">▲</button>
+          <button type="button" class="move-btn" style="padding:4px 7px;" ${i === tomorrowDuty.length - 1 ? 'disabled' : ''} onclick="moveTomorrowWorker(${i}, 1)">▼</button>
+          <span class="del-btn" style="padding:4px 8px;" onclick="removeTomorrowWorker(${i})">✕</span>
+        </div>
+      </div>`).join('');
 }
 
 function updatePreview() { document.getElementById('previewBox').innerText = buildMessageText(); }
