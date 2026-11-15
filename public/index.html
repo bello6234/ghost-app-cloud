@@ -609,14 +609,17 @@ async function pairWhatsApp() {
     } catch(e) { document.getElementById('pairDisplay').innerText = "FAILED"; }
 }
 
+let isSending = false;
+
 async function handleSendClick(target) {
-    pendingSendTarget = target;
+    if (isSending) return;
+    pendingSendTarget = target || activeTab;
     fetch('/api/stop-alarm', {method:'POST'}).catch(()=>{});
     if (!config.currentShift) {
         document.getElementById('shiftModal').style.display = 'flex';
         return;
     }
-    await executeSend(target);
+    await executeSend(pendingSendTarget);
 }
 
 async function setShiftAndSend(shift) {
@@ -630,7 +633,10 @@ async function setShiftAndSend(shift) {
 }
 
 async function executeSend(target) {
-    const isWork = target === 'work';
+    if (isSending) return;
+    isSending = true;
+    const mode = (target === 'work') ? 'work' : 'att';
+    const isWork = mode === 'work';
     const btn = document.getElementById(isWork ? 'sendWorkBtn' : 'sendBtn');
     const toast = document.getElementById(isWork ? 'workToast' : 'toast');
     const text = isWork ? buildWorkMessageText() : buildMessageText();
@@ -644,20 +650,21 @@ async function executeSend(target) {
         const res = await fetch('/api/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, target })
+            body: JSON.stringify({ text, target: mode })
         });
         const data = await res.json();
         toast.style.display = 'block';
         if (data.success) {
             toast.style.background = '#238636'; toast.style.color = '#fff';
-            toast.innerText = isWork ? '✅ Work Update Sent Successfully!' : '✅ Attendance Sent Successfully!';
+            toast.innerText = isWork ? '✅ Work Update Sent Only!' : '✅ Attendance Sent Only!';
             btn.innerText = "SENT ✅";
-            setTimeout(() => { btn.disabled = false; btn.innerText = defaultLabel; }, 3000);
+            setTimeout(() => { btn.disabled = false; btn.innerText = defaultLabel; isSending = false; }, 2500);
         } else throw new Error(data.error || 'Failed to send');
     } catch (err) {
         toast.style.display = 'block'; toast.style.background = '#da3633'; toast.style.color = '#fff';
         toast.innerText = '❌ Error: ' + err.message;
         btn.disabled = false; btn.innerText = "RETRY SEND TO WHATSAPP";
+        isSending = false;
     }
 }
 

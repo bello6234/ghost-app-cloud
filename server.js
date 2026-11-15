@@ -306,6 +306,23 @@ app.post('/api/send', async (req, res) => {
     if (!s || !s.connected) return res.status(500).json({ error: 'WhatsApp not connected' });
     try {
         const cfg = await loadConfig(id);
+        const mode = (req.body && req.body.target === 'work') ? 'work' : 'att';
+        const recipients = mode === 'work' ? (cfg.workNumbers || []) : (cfg.numbers || []);
+        if (!recipients.length) {
+            return res.status(400).json({
+                error: mode === 'work' ? 'No Work Update receiver numbers added' : 'No Attendance receiver numbers added'
+            });
+        }
+        const text = String((req.body && req.body.text) || '').slice(0, 4000);
+        if (!text) return res.status(400).json({ error: 'Empty message' });
+        for (const num of recipients) {
+            await s.sock.sendMessage(num.endsWith('@g.us') ? num : num + '@s.whatsapp.net', { text });
+        }
+        res.json({ success: true, sentTo: recipients.length, mode });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+    try {
+        const cfg = await loadConfig(id);
         const targetList = (req.body && req.body.target === 'work') ? (cfg.workNumbers || []) : cfg.numbers;
         if (!targetList.length) return res.status(400).json({ error: req.body && req.body.target === 'work' ? 'No Work Update receiver numbers added' : 'No receiver numbers added' });
         const text = String((req.body && req.body.text) || '').slice(0, 4000);
