@@ -147,7 +147,7 @@
   <div id="groupsContainer"></div>
   <div style="display:flex; gap:8px; margin-bottom:14px;">
     <button class="add-group-btn" style="flex:2; margin-bottom:0;" onclick="addWorkGroup()">+ ADD GROUP</button>
-    <button class="add-group-btn" style="flex:1; margin-bottom:0; border-color:#f85149; color:#f85149; background:rgba(248,81,73,0.08);" onclick="resetWorkUpdate()">🔄 NEW DAY</button>
+    <button class="add-group-btn" style="flex:1; margin-bottom:0; border-color:#f85149; color:#f85149; background:rgba(248,81,73,0.08);" id="newDayBtn" onclick="resetWorkUpdate()">🔄 NEW DAY</button>
   </div>
 
   <div class="group-card">
@@ -432,8 +432,29 @@ function updateGroupField(idx, field, val) {
     scheduleSave();
 }
 
+let resetArmed = false;
+let resetArmTimer = null;
+
 function resetWorkUpdate() {
-    if (!confirm("Clear all group names, counts, and sorting for a new day?")) return;
+    const btn = document.getElementById('newDayBtn');
+    if (!resetArmed) {
+        resetArmed = true;
+        btn.innerText = '⚠️ CONFIRM CLEAR';
+        btn.style.background = 'rgba(248, 81, 73, 0.25)';
+        clearTimeout(resetArmTimer);
+        resetArmTimer = setTimeout(() => {
+            resetArmed = false;
+            btn.innerText = '🔄 NEW DAY';
+            btn.style.background = 'rgba(248, 81, 73, 0.08)';
+        }, 4000);
+        return;
+    }
+    resetArmed = false;
+    clearTimeout(resetArmTimer);
+    clearTimeout(saveTimer);
+    btn.innerText = '🔄 NEW DAY';
+    btn.style.background = 'rgba(248, 81, 73, 0.08)';
+
     config.workGroups = config.workGroups.map((g, i) => ({
         name: 'Group ' + String.fromCharCode(65 + i),
         w1: '',
