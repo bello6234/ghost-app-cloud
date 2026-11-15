@@ -124,6 +124,13 @@
     <button id="btn-leave" class="mode-btn" onclick="selectMode('leave')">LEAVE</button>
   </div>
 
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <span style="font-size:12px; color:#8b949e;">Arrange order (auto-saves):</span>
+    <div style="display:flex; gap:6px;">
+      <button type="button" class="move-btn" style="color:#7ee787;" onclick="shuffleWorkers()">🔀 Shuffle</button>
+      <button type="button" class="move-btn" onclick="sortWorkersAZ()">A–Z</button>
+    </div>
+  </div>
   <div id="workerList" class="worker-list"></div>
 
   <div class="toolbar-label">LIVE WHATSAPP MESSAGE PREVIEW:</div>
@@ -175,13 +182,7 @@
     </div>
 
     <div class="modal-section">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h3 style="margin: 0; color: var(--text);">👥 Workers List</h3>
-          <div style="display:flex; gap:6px;">
-            <button type="button" class="move-btn" style="color:#7ee787;" onclick="shuffleWorkers()">🔀 Shuffle</button>
-            <button type="button" class="move-btn" onclick="sortWorkersAZ()">A–Z</button>
-          </div>
-        </div>
+        <h3 style="margin-top: 0; color: var(--text);">👥 Workers List</h3>
         <div id="settingsWorkers"></div>
         <input type="text" id="newWorker" placeholder="Type new worker name">
         <button class="modal-btn" onclick="addWorker()">+ Add Worker</button>
@@ -352,12 +353,20 @@ function buildMessageText() {
 function renderList() {
     const container = document.getElementById('workerList');
     container.innerHTML = '';
-    config.workers.forEach(name => {
+    config.workers.forEach((name, i) => {
         const st = statuses[name];
         const row = document.createElement('div');
         row.className = `worker-row status-${st}`;
         const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE', off: 'OFF' };
-        row.innerHTML = `<span class="worker-name">${name}</span><button class="marker-btn" onclick="markWorker('${name.replace(/'/g, "\\'")}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
+        row.innerHTML = `
+          <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; padding-right:6px;">
+            <div style="display:flex; gap:3px; flex-shrink:0;">
+              <button type="button" class="move-btn" style="padding:5px 7px;" ${i === 0 ? 'disabled' : ''} onclick="moveWorker(${i}, -1)">▲</button>
+              <button type="button" class="move-btn" style="padding:5px 7px;" ${i === config.workers.length - 1 ? 'disabled' : ''} onclick="moveWorker(${i}, 1)">▼</button>
+            </div>
+            <span class="worker-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</span>
+          </div>
+          <button class="marker-btn" style="flex-shrink:0;" onclick="markWorker('${name.replace(/'/g, "\\'")}')"><span class="marker-dot"></span><span>${labelMap[st]}</span></button>`;
         container.appendChild(row);
     });
     updatePreview();
@@ -512,7 +521,8 @@ function moveWorker(idx, dir) {
     const temp = config.workers[idx];
     config.workers[idx] = config.workers[target];
     config.workers[target] = temp;
-    renderSettingsUI();
+    renderList();
+    scheduleSave();
 }
 
 function shuffleWorkers() {
@@ -520,24 +530,18 @@ function shuffleWorkers() {
         const j = Math.floor(Math.random() * (i + 1));
         [config.workers[i], config.workers[j]] = [config.workers[j], config.workers[i]];
     }
-    renderSettingsUI();
+    renderList();
+    scheduleSave();
 }
 
 function sortWorkersAZ() {
     config.workers.sort((a, b) => a.localeCompare(b));
-    renderSettingsUI();
+    renderList();
+    scheduleSave();
 }
 
 function renderSettingsUI() {
-    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `
-      <div class="list-item">
-        <span style="font-weight:500; flex:1; padding-right:8px;">${i + 1}. ${w}</span>
-        <div class="order-btns">
-          <button type="button" class="move-btn" ${i === 0 ? 'disabled' : ''} onclick="moveWorker(${i}, -1)">▲</button>
-          <button type="button" class="move-btn" ${i === config.workers.length - 1 ? 'disabled' : ''} onclick="moveWorker(${i}, 1)">▼</button>
-          <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">✕</span>
-        </div>
-      </div>`).join('');
+    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500;">${w}</span> <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsWorkNumbers').innerHTML = (config.workNumbers || []).map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.workNumbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
 }
