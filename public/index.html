@@ -403,7 +403,7 @@ function buildMessageText() {
     let msg = `${shiftDisplay} SHIFT ATTENDANCE \n${subLine}  ${formattedDate}\n\n`;
     present.forEach((name, idx) => { msg += `${idx + 1}. ${name}\n`; });
 
-    if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
+    if (absent.length > 0) msg += `\nABSENT \n` + absent.join('\n') + `\n`;
     if (sick.length > 0) msg += `\nSICK \n` + sick.join('\n') + `\n`;
     if (leave.length > 0) msg += `\nLEAVE \n` + leave.join('\n') + `\n`;
     if (off.length > 0) msg += `\nOFF \n` + off.join('\n') + `\n`;
