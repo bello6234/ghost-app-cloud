@@ -322,16 +322,6 @@ app.post('/api/send', async (req, res) => {
         res.json({ success: true, sentTo: recipients.length, mode });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
-    try {
-        const cfg = await loadConfig(id);
-        const targetList = (req.body && req.body.target === 'work') ? (cfg.workNumbers || []) : cfg.numbers;
-        if (!targetList.length) return res.status(400).json({ error: req.body && req.body.target === 'work' ? 'No Work Update receiver numbers added' : 'No receiver numbers added' });
-        const text = String((req.body && req.body.text) || '').slice(0, 4000);
-        if (!text) return res.status(400).json({ error: 'Empty message' });
-        for (const num of targetList) await s.sock.sendMessage(num.endsWith('@g.us') ? num : num + '@s.whatsapp.net', { text });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
 
 app.post('/api/test-alarm', (req, res) => res.json({ triggered: false }));
 app.post('/api/stop-alarm', (req, res) => res.json({ stopped: true }));
