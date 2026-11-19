@@ -405,7 +405,7 @@ function buildMessageText() {
 
     if (absent.length > 0) msg += `\nAbsent \n` + absent.join('\n') + `\n`;
     if (sick.length > 0) msg += `\nSICK \n` + sick.join('\n') + `\n`;
-    if (leave.length > 0) msg += `\nOn Leave \n` + leave.join('\n') + `\n`;
+    if (leave.length > 0) msg += `\nLEAVE \n` + leave.join('\n') + `\n`;
     if (off.length > 0) msg += `\nOFF \n` + off.join('\n') + `\n`;
 
     return msg.trim();
@@ -418,7 +418,7 @@ function renderList() {
         const st = statuses[name];
         const row = document.createElement('div');
         row.className = `worker-row status-${st}`;
-        const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'ON LEAVE', off: 'OFF' };
+        const labelMap = { present: 'PRESENT', absent: 'ABSENT', sick: 'SICK', leave: 'LEAVE', off: 'OFF' };
         row.innerHTML = `
           <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0; padding-right:6px;">
             <div style="display:flex; gap:3px; flex-shrink:0;">
