@@ -155,6 +155,9 @@
       </div>
       <div id="tomChipPool" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
       <div id="tomorrowList" style="display:flex; flex-direction:column; gap:6px; margin-top:8px;"></div>
+      <div class="toolbar-label" style="margin-top:12px;">TOMORROW DUTY PREVIEW:</div>
+      <div id="tomorrowPreviewBox" class="preview-box" style="margin-bottom:10px; min-height:54px;">Select names above to preview...</div>
+      <button type="button" id="sendTomorrowBtn" class="send-btn" style="background:#d29922; color:#000; margin-top:0;" onclick="sendTomorrowDuty()">📤 SEND ON DUTY TOMORROW</button>
     </div>
   </div>
 
@@ -442,6 +445,7 @@ function toggleTomorrowSection() {
 }
 
 function setTomorrowShift(shift) {
+    setTimeout(updateTomorrowPreview, 0);
     tomorrowShift = shift;
     const mBtn = document.getElementById('tomShiftMorning');
     const aBtn = document.getElementById('tomShiftAfternoon');
@@ -493,6 +497,45 @@ function clearTomorrowDuty() {
     updatePreview();
 }
 
+
+function buildTomorrowMessageText() {
+    if (tomorrowDuty.length === 0) return '';
+    let msg = 'PEOPLE ON DUTY TOMORROW ' + tomorrowShift + ' \n  ' + tomorrowShortDate + '\n\n';
+    tomorrowDuty.forEach((name, i) => { msg += (i + 1) + '. ' + name + '\n'; });
+    return msg.trim();
+}
+
+function updateTomorrowPreview() {
+    const box = document.getElementById('tomorrowPreviewBox');
+    if (!box) return;
+    const txt = buildTomorrowMessageText();
+    box.innerText = txt || 'Select names above to preview...';
+}
+
+async function sendTomorrowDuty() {
+    const text = buildTomorrowMessageText();
+    if (!text) return alert('Select at least 1 worker for tomorrow first!');
+    const btn = document.getElementById('sendTomorrowBtn');
+    const orig = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '⏳ SENDING...';
+    try {
+        const res = await fetch('/api/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, mode: 'attendance', target: 'attendance' })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'Failed to send');
+        btn.innerText = '✅ ON DUTY TOMORROW SENT!';
+        setTimeout(() => { btn.innerText = orig; btn.disabled = false; }, 3000);
+    } catch (e) {
+        alert('Send failed: ' + e.message);
+        btn.innerText = orig;
+        btn.disabled = false;
+    }
+}
+
 function renderTomorrowDuty() {
     const lbl = document.getElementById('tomDateLabel');
     if (lbl) lbl.innerText = tomorrowShortDate;
@@ -503,6 +546,7 @@ function renderTomorrowDuty() {
             return `<button type="button" onclick="toggleTomorrowWorker('${w.replace(/'/g, "\\'")}')" style="padding:7px 11px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:1px solid ${active ? '#d29922' : '#30363d'}; background:${active ? 'rgba(210,153,34,0.22)' : '#090d11'}; color:${active ? '#e3b341' : '#c9d1d9'};">${active ? '✓ ' : '+ '}${w}</button>`;
         }).join('');
     }
+    updateTomorrowPreview();
     const list = document.getElementById('tomorrowList');
     if (!list) return;
     list.innerHTML = tomorrowDuty.map((name, i) => `
