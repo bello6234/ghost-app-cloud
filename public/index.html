@@ -749,14 +749,36 @@ function sortWorkersAZ() {
     scheduleSave();
 }
 
+let editingWorkerIdx = -1;
+
 function editWorker(i) {
+    editingWorkerIdx = i;
+    renderSettingsUI();
+    setTimeout(() => {
+        const inp = document.getElementById('editWorkerInput');
+        if (inp) { inp.focus(); inp.select(); }
+    }, 30);
+}
+
+function cancelEditWorker() {
+    editingWorkerIdx = -1;
+    renderSettingsUI();
+}
+
+function saveEditWorker(i) {
+    const inp = document.getElementById('editWorkerInput');
+    if (!inp) return;
     const oldName = config.workers[i];
-    if (!oldName) return;
-    const input = prompt('Edit worker name:', oldName);
-    if (input === null) return;
-    const newName = input.trim();
-    if (!newName || newName === oldName) return;
-    if (config.workers.includes(newName)) return alert('That name already exists!');
+    const newName = inp.value.trim();
+    if (!newName || newName === oldName) {
+        editingWorkerIdx = -1;
+        renderSettingsUI();
+        return;
+    }
+    if (config.workers.includes(newName)) {
+        inp.style.borderColor = '#f85149';
+        return;
+    }
 
     config.workers[i] = newName;
     if (statuses[oldName]) {
@@ -768,6 +790,7 @@ function editWorker(i) {
         if (tIdx !== -1) tomorrowDuty[tIdx] = newName;
     }
 
+    editingWorkerIdx = -1;
     renderSettingsUI();
     if (typeof renderList === 'function') renderList();
     if (typeof renderTomorrowDuty === 'function') renderTomorrowDuty();
@@ -776,7 +799,7 @@ function editWorker(i) {
 }
 
 function renderSettingsUI() {
-    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500; flex:1;">${w}</span> <div style="display:flex; gap:6px; align-items:center;"><span class="move-btn" style="padding:5px 10px;" onclick="editWorker(${i})">EDIT</span><span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div></div>`).join('');
+    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => i === editingWorkerIdx ? `<div class="list-item" style="gap:6px;"><input id="editWorkerInput" type="text" value="${w.replace(/"/g, '&quot;')}" style="flex:1; margin:0; padding:6px 8px; background:#0d1117; color:#fff; border:1px solid #58a6ff; border-radius:4px; font-size:14px;" onkeydown="if(event.key==='Enter') saveEditWorker(${i});"><span class="move-btn" style="padding:6px 10px; background:#238636; color:#fff; border:none;" onclick="saveEditWorker(${i})">SAVE</span><span class="del-btn" style="padding:6px 8px;" onclick="cancelEditWorker()">✕</span></div>` : `<div class="list-item"><span style="font-weight:500; flex:1;">${w}</span> <div style="display:flex; gap:6px; align-items:center;"><span class="move-btn" style="padding:5px 10px;" onclick="editWorker(${i})">EDIT</span><span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div></div>`).join('');
     document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsWorkNumbers').innerHTML = (config.workNumbers || []).map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.workNumbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
 }
