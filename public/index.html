@@ -698,10 +698,12 @@ function buildWorkMessageText() {
         if (g.w2) msg += `${g.w2} \n`;
         const petVal = String(g.pet ?? '').trim();
         const canVal = String(g.can ?? '').trim();
-        const parts = [];
-        if (petVal !== '' && Number(petVal) !== 0) parts.push(`PET ${petVal}`);
-        if (canVal !== '' && Number(canVal) !== 0) parts.push(`CAN ${canVal}`);
-        const totalLine = parts.length > 0 ? `   Total= ${parts.join(' ')}` : `   Total= 0`;
+        const hasPet = petVal !== '' && Number(petVal) !== 0;
+        const hasCan = canVal !== '' && Number(canVal) !== 0;
+        let totalLine = '   Total= 0';
+        if (hasPet && hasCan) totalLine = `   Total= ${petVal} PET, CAN =${canVal}`;
+        else if (hasPet) totalLine = `   Total= ${petVal} PET`;
+        else if (hasCan) totalLine = `   Total= ${canVal} CAN`;
         msg += `${totalLine} \n\n`;
     });
 
