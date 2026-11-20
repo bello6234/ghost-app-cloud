@@ -696,10 +696,12 @@ function buildWorkMessageText() {
         msg += `   ${g.name} \n`;
         if (g.w1) msg += `${g.w1} \n`;
         if (g.w2) msg += `${g.w2} \n`;
-        let totalLine = `   Total= ${g.pet || '0'}  PET`;
-        if (g.can && String(g.can).trim() !== '') {
-            totalLine += ` CAN ${g.can}`;
-        }
+        const petVal = String(g.pet ?? '').trim();
+        const canVal = String(g.can ?? '').trim();
+        const parts = [];
+        if (petVal !== '' && Number(petVal) !== 0) parts.push(`PET ${petVal}`);
+        if (canVal !== '' && Number(canVal) !== 0) parts.push(`CAN ${canVal}`);
+        const totalLine = parts.length > 0 ? `   Total= ${parts.join(' ')}` : `   Total= 0`;
         msg += `${totalLine} \n\n`;
     });
 
