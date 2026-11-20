@@ -749,8 +749,34 @@ function sortWorkersAZ() {
     scheduleSave();
 }
 
+function editWorker(i) {
+    const oldName = config.workers[i];
+    if (!oldName) return;
+    const input = prompt('Edit worker name:', oldName);
+    if (input === null) return;
+    const newName = input.trim();
+    if (!newName || newName === oldName) return;
+    if (config.workers.includes(newName)) return alert('That name already exists!');
+
+    config.workers[i] = newName;
+    if (statuses[oldName]) {
+        statuses[newName] = statuses[oldName];
+        delete statuses[oldName];
+    }
+    if (typeof tomorrowDuty !== 'undefined') {
+        const tIdx = tomorrowDuty.indexOf(oldName);
+        if (tIdx !== -1) tomorrowDuty[tIdx] = newName;
+    }
+
+    renderSettingsUI();
+    if (typeof renderList === 'function') renderList();
+    if (typeof renderTomorrowDuty === 'function') renderTomorrowDuty();
+    if (typeof updatePreview === 'function') updatePreview();
+    if (typeof saveConfig === 'function') saveConfig();
+}
+
 function renderSettingsUI() {
-    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500;">${w}</span> <span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
+    document.getElementById('settingsWorkers').innerHTML = config.workers.map((w, i) => `<div class="list-item"><span style="font-weight:500; flex:1;">${w}</span> <div style="display:flex; gap:6px; align-items:center;"><span class="move-btn" style="padding:5px 10px;" onclick="editWorker(${i})">EDIT</span><span class="del-btn" onclick="config.workers.splice(${i},1); renderSettingsUI();">REMOVE</span></div></div>`).join('');
     document.getElementById('settingsNumbers').innerHTML = config.numbers.map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.numbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
     document.getElementById('settingsWorkNumbers').innerHTML = (config.workNumbers || []).map((n, i) => `<div class="list-item"><span style="font-family:monospace;">${n}</span> <span class="del-btn" onclick="config.workNumbers.splice(${i},1); renderSettingsUI();">REMOVE</span></div>`).join('');
 }
